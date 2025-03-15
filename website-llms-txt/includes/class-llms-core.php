@@ -183,7 +183,11 @@ class LLMS_Core {
     }
 
     public function add_rewrite_rule() {
-        add_rewrite_rule('^llms\.txt$', 'index.php?llms_txt=1', 'top');
+        global $wp_rewrite;
+        $existing_rules = $wp_rewrite->wp_rewrite_rules();
+        if (!isset($existing_rules['^llms\.txt$'])) {
+            add_rewrite_rule('^llms\.txt$', 'index.php?llms_txt=1', 'top');
+        }
     }
 
     public function add_query_vars($vars) {

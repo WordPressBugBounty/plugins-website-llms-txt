@@ -35,7 +35,7 @@ class LLMS_Generator
 
         // Hook into post updates
         add_action('save_post', array($this, 'handle_post_update'), 10, 3);
-        add_action('before_delete_post', array($this, 'handle_post_deletion'));
+        add_action('deleted_post', array($this, 'handle_post_deletion'), 999, 2);
         add_action('wp_update_term', array($this, 'handle_term_update'));
         add_action('llms_scheduled_update', array($this, 'llms_scheduled_update'));
         add_action('schedule_updates', array($this, 'schedule_updates'));
@@ -382,8 +382,12 @@ class LLMS_Generator
         }
     }
 
-    public function handle_post_deletion($post_id)
+    public function handle_post_deletion($post_id, $post)
     {
+        if (!$post || $post->post_type === 'revision') {
+            return;
+        }
+
         if ($this->settings['update_frequency'] === 'immediate') {
             $this->update_llms_file();
         }

@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 4.0.6
+Stable tag: 4.0.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,6 +51,40 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 4.0.8 =
+
+🛠 Improvements & Fixes
+✅ Fixed an issue where post revisions triggered the post deletion handler
+
+The handle_post_deletion() function now ignores post revisions by checking the post type (post_type !== 'revision').
+This prevents unnecessary updates when WordPress auto-saves revisions or when users delete revisions manually.
+✅ Enhanced stability of the content update process
+
+Ensured that the handle_post_deletion() function only executes when an actual post is deleted, reducing unnecessary file rewrites.
+✅ General code improvements
+
+Added additional validation to prevent errors when handling deleted posts.
+Optimized database queries for better performance.
+🚀 This update improves the plugin's efficiency by reducing unnecessary processing and ensuring more stable content updates.
+
+= 4.0.7 =
+
+🛠 Improvements & Fixes
+✅ Fixed rewrite rule conflicts:
+
+Resolved an issue where the add_rewrite_rule() function was overriding WordPress post editing URLs.
+Implemented a check to ensure the llms.txt rule does not overwrite existing permalink structures.
+Used wp_rewrite_rules() to verify if the rule already exists before adding it.
+✅ Enhanced rewrite rule handling:
+
+Prevented duplicate rules from being registered.
+Improved compatibility with custom post types and WordPress core URLs.
+✅ Code Optimization & Performance:
+
+Added additional security checks when handling requests.
+Improved overall plugin stability and reliability.
+🚀 This update ensures smoother permalink handling, better compatibility with WordPress core features, and improved stability for future updates.
 
 = 4.0.6 =
 * Updated Descriptions
@@ -119,3 +153,37 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 
 = 4.0.6 =
 * Updated Descriptions
+
+= 4.0.7 =
+
+🛠 Improvements & Fixes
+✅ Fixed rewrite rule conflicts:
+
+Resolved an issue where the add_rewrite_rule() function was overriding WordPress post editing URLs.
+Implemented a check to ensure the llms.txt rule does not overwrite existing permalink structures.
+Used wp_rewrite_rules() to verify if the rule already exists before adding it.
+✅ Enhanced rewrite rule handling:
+
+Prevented duplicate rules from being registered.
+Improved compatibility with custom post types and WordPress core URLs.
+✅ Code Optimization & Performance:
+
+Added additional security checks when handling requests.
+Improved overall plugin stability and reliability.
+🚀 This update ensures smoother permalink handling, better compatibility with WordPress core features, and improved stability for future updates.
+
+= 4.0.8 =
+
+🛠 Improvements & Fixes
+✅ Fixed an issue where post revisions triggered the post deletion handler
+
+The handle_post_deletion() function now ignores post revisions by checking the post type (post_type !== 'revision').
+This prevents unnecessary updates when WordPress auto-saves revisions or when users delete revisions manually.
+✅ Enhanced stability of the content update process
+
+Ensured that the handle_post_deletion() function only executes when an actual post is deleted, reducing unnecessary file rewrites.
+✅ General code improvements
+
+Added additional validation to prevent errors when handling deleted posts.
+Optimized database queries for better performance.
+🚀 This update improves the plugin's efficiency by reducing unnecessary processing and ensuring more stable content updates.
