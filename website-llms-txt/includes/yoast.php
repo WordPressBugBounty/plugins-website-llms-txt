@@ -13,7 +13,11 @@ class LLMS_Yoast_Integration {
     }
 
     public function add_rewrite_rules() {
-        add_rewrite_rule('llms-sitemap\.xml$', 'index.php?sitemap=llms', 'top');
+        global $wp_rewrite;
+        $existing_rules = $wp_rewrite->wp_rewrite_rules();
+        if (!isset($existing_rules['^llms-sitemap\.xml$'])) {
+            add_rewrite_rule('^llms-sitemap\.xml$', 'index.php?sitemap=llms', 'top');
+        }
         add_filter('query_vars', function($vars) {
             $vars[] = 'sitemap';
             return $vars;

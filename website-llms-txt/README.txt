@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 4.0.8
+Stable tag: 4.0.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,6 +51,23 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 4.0.9 =
+
+🛠 Improvements & Fixes
+✅ Fixed compatibility issue with Yoast SEO sitemap generation
+
+Resolved a problem where the llms-sitemap.xml file was not properly integrated with Yoast SEO’s sitemap indexing.
+Ensured that the custom llms-sitemap.xml is correctly registered and included in Yoast’s sitemap structure.
+✅ Enhanced XML sitemap handling
+
+Added support for llms-sitemap.xml in the Yoast SEO wpseo_sitemaps_index filter.
+Improved automatic detection and registration of the custom sitemap to avoid conflicts.
+✅ Better performance & stability
+
+Optimized the sitemap generation process to ensure compatibility with WordPress rewrite rules.
+Fixed potential issues where the custom sitemap URL might not be accessible due to incorrect rewrite rules.
+🚀 This update ensures full compatibility between the LLMS sitemap and Yoast SEO, improving site indexing and search engine visibility.
 
 = 4.0.8 =
 
@@ -187,3 +204,20 @@ Ensured that the handle_post_deletion() function only executes when an actual po
 Added additional validation to prevent errors when handling deleted posts.
 Optimized database queries for better performance.
 🚀 This update improves the plugin's efficiency by reducing unnecessary processing and ensuring more stable content updates.
+
+= 4.0.9 =
+
+🛠 Improvements & Fixes
+✅ Fixed compatibility issue with Yoast SEO sitemap generation
+
+Resolved a problem where the llms-sitemap.xml file was not properly integrated with Yoast SEO’s sitemap indexing.
+Ensured that the custom llms-sitemap.xml is correctly registered and included in Yoast’s sitemap structure.
+✅ Enhanced XML sitemap handling
+
+Added support for llms-sitemap.xml in the Yoast SEO wpseo_sitemaps_index filter.
+Improved automatic detection and registration of the custom sitemap to avoid conflicts.
+✅ Better performance & stability
+
+Optimized the sitemap generation process to ensure compatibility with WordPress rewrite rules.
+Fixed potential issues where the custom sitemap URL might not be accessible due to incorrect rewrite rules.
+🚀 This update ensures full compatibility between the LLMS sitemap and Yoast SEO, improving site indexing and search engine visibility.

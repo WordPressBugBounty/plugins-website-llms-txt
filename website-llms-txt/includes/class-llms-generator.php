@@ -417,6 +417,25 @@ class LLMS_Generator
         if (file_exists($upload_path)) {
             $this->wp_filesystem->copy($upload_path, $file_path, true);
         }
+
+        // Update the hidden post
+        $core = new LLMS_Core();
+        $existing_post = $core->get_llms_post();
+
+        $post_data = array(
+            'post_title' => 'LLMS.txt',
+            'post_content' => 'content',
+            'post_status' => 'publish',
+            'post_type' => 'llms_txt'
+        );
+
+        if ($existing_post) {
+            $post_data['ID'] = $existing_post->ID;
+            wp_update_post($post_data);
+        } else {
+            wp_insert_post($post_data);
+        }
+
         do_action('llms_clear_seo_caches');
     }
 

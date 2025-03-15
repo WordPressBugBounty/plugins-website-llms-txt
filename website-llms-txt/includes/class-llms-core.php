@@ -31,9 +31,19 @@ class LLMS_Core {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
     }
 
+    public function get_llms_post() {
+        $posts = get_posts(array(
+            'post_type' => 'llms_txt',
+            'posts_per_page' => 1,
+            'post_status' => 'publish'
+        ));
+
+        return !empty($posts) ? $posts[0] : null;
+    }
+
     public function init() {
         // Register post type
-
+        $this->create_post_type();
         // Initialize generator after post type
         require_once LLMS_PLUGIN_DIR . 'includes/class-llms-generator.php';
         $this->generator = new LLMS_Generator();
@@ -42,6 +52,24 @@ class LLMS_Core {
         $this->add_rewrite_rule();
         add_filter('query_vars', array($this, 'add_query_vars'));
         add_action('template_redirect', array($this, 'handle_llms_request'));
+    }
+
+    public function create_post_type() {
+        register_post_type('llms_txt', array(
+            'public' => false,
+            'publicly_queryable' => false,
+            'show_ui' => false,
+            'show_in_menu' => false,
+            'show_in_admin_bar' => false,
+            'show_in_nav_menus' => false,
+            'show_in_rest' => false,
+            'rewrite' => false,
+            'capability_type' => 'post',
+            'has_archive' => false,
+            'hierarchical' => false,
+            'supports' => array('title', 'editor'),
+            'exclude_from_sitemap' => true
+        ));
     }
 
     public function init_seo_integrations() {
