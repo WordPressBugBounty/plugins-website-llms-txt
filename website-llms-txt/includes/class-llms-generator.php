@@ -157,9 +157,15 @@ class LLMS_Generator
                     'order' => 'DESC',
                     'paged' => $paged,
                     'meta_query' => array(
+                        'relation' => 'AND',
                         array(
                             'key' => '_yoast_wpseo_meta-robots-nofollow',
                             'compare' => 'NOT EXISTS'
+                        ),
+                        array(
+                            'key' => 'rank_math_robots',
+                            'value' => 'noindex',
+                            'compare' => 'NOT LIKE'
                         )
                     )
                 ));
@@ -276,9 +282,15 @@ class LLMS_Generator
                     'order' => 'DESC',
                     'paged' => $paged,
                     'meta_query' => array(
+                        'relation' => 'AND',
                         array(
                             'key' => '_yoast_wpseo_meta-robots-nofollow',
                             'compare' => 'NOT EXISTS'
+                        ),
+                        array(
+                            'key' => 'rank_math_robots',
+                            'value' => 'noindex',
+                            'compare' => 'NOT LIKE'
                         )
                     )
                 ));

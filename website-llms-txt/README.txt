@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 4.0.9
+Stable tag: 5.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,6 +51,30 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 5.0.0 =
+
+🛠 Improvements & Fixes
+
+✅ Added support for excluding noindex pages from Rank Math SEO
+
+- The plugin now properly detects and excludes pages that have the `noindex` directive set in Rank Math SEO.
+- Ensured that pages with `rank_math_robots` meta key containing `noindex` will not be included in the LLMS-generated files.
+- This enhancement improves search engine indexing by preventing noindex-marked pages from being processed.
+
+✅ Extended support for Yoast SEO & Rank Math
+
+- Now supports both Yoast SEO and Rank Math SEO for detecting `noindex` pages.
+- Ensured that `meta-robots-noindex` in Yoast and `rank_math_robots` in Rank Math are respected.
+- Improved meta query logic to exclude noindex-marked pages efficiently.
+
+✅ Better performance & stability
+
+- Optimized post query handling to reduce unnecessary database queries when filtering indexed content.
+- Improved support for large-scale websites by ensuring efficient exclusion of noindex pages.
+
+🚀 This update ensures full compatibility with both Yoast SEO and Rank Math SEO, improving site indexing and preventing unwanted pages from being processed.
+
 
 = 4.0.9 =
 
@@ -221,3 +245,26 @@ Improved automatic detection and registration of the custom sitemap to avoid con
 Optimized the sitemap generation process to ensure compatibility with WordPress rewrite rules.
 Fixed potential issues where the custom sitemap URL might not be accessible due to incorrect rewrite rules.
 🚀 This update ensures full compatibility between the LLMS sitemap and Yoast SEO, improving site indexing and search engine visibility.
+
+= 5.0.0 =
+
+🛠 Improvements & Fixes
+
+✅ Added support for excluding noindex pages from Rank Math SEO
+
+- The plugin now properly detects and excludes pages that have the `noindex` directive set in Rank Math SEO.
+- Ensured that pages with `rank_math_robots` meta key containing `noindex` will not be included in the LLMS-generated files.
+- This enhancement improves search engine indexing by preventing noindex-marked pages from being processed.
+
+✅ Extended support for Yoast SEO & Rank Math
+
+- Now supports both Yoast SEO and Rank Math SEO for detecting `noindex` pages.
+- Ensured that `meta-robots-noindex` in Yoast and `rank_math_robots` in Rank Math are respected.
+- Improved meta query logic to exclude noindex-marked pages efficiently.
+
+✅ Better performance & stability
+
+- Optimized post query handling to reduce unnecessary database queries when filtering indexed content.
+- Improved support for large-scale websites by ensuring efficient exclusion of noindex pages.
+
+🚀 This update ensures full compatibility with both Yoast SEO and Rank Math SEO, improving site indexing and preventing unwanted pages from being processed.
