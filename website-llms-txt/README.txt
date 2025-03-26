@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 5.0.0
+Stable tag: 5.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,6 +51,25 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 5.0.1 =
+
+🛠 Improvements & Fixes
+
+✅ Fixed issue with empty LLMS-generated files
+	•	Resolved a bug where LLMS-generated files could appear empty if the rank_math_robots meta key was missing from posts.
+	•	The plugin now correctly includes posts even if the Rank Math plugin is not installed or the meta field is not present.
+	•	Prevented false negatives by ensuring the query accounts for both existing and non-existent rank_math_robots fields.
+
+✅ Improved meta query logic for noindex handling
+	•	Extended the meta_query to handle posts without the rank_math_robots key gracefully.
+	•	Ensured that only posts explicitly marked as noindex are excluded, while all others (including those with no SEO plugin data) are properly included.
+
+✅ Improved file generation accuracy
+	•	Ensured that LLMS-related output files contain valid, expected content — reducing cases where generated files were blank due to strict filtering.
+	•	Improved fallback logic for posts without SEO meta data.
+
+🚀 This update ensures that LLMS-generated files remain accurate and complete, even on sites that don’t use Rank Math, and improves overall reliability when filtering content by SEO metadata.
 
 = 5.0.0 =
 
@@ -268,3 +287,22 @@ Fixed potential issues where the custom sitemap URL might not be accessible due 
 - Improved support for large-scale websites by ensuring efficient exclusion of noindex pages.
 
 🚀 This update ensures full compatibility with both Yoast SEO and Rank Math SEO, improving site indexing and preventing unwanted pages from being processed.
+
+= 5.0.1 =
+
+🛠 Improvements & Fixes
+
+✅ Fixed issue with empty LLMS-generated files
+	•	Resolved a bug where LLMS-generated files could appear empty if the rank_math_robots meta key was missing from posts.
+	•	The plugin now correctly includes posts even if the Rank Math plugin is not installed or the meta field is not present.
+	•	Prevented false negatives by ensuring the query accounts for both existing and non-existent rank_math_robots fields.
+
+✅ Improved meta query logic for noindex handling
+	•	Extended the meta_query to handle posts without the rank_math_robots key gracefully.
+	•	Ensured that only posts explicitly marked as noindex are excluded, while all others (including those with no SEO plugin data) are properly included.
+
+✅ Improved file generation accuracy
+	•	Ensured that LLMS-related output files contain valid, expected content — reducing cases where generated files were blank due to strict filtering.
+	•	Improved fallback logic for posts without SEO meta data.
+
+🚀 This update ensures that LLMS-generated files remain accurate and complete, even on sites that don’t use Rank Math, and improves overall reliability when filtering content by SEO metadata.

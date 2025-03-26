@@ -163,10 +163,17 @@ class LLMS_Generator
                             'compare' => 'NOT EXISTS'
                         ),
                         array(
-                            'key' => 'rank_math_robots',
-                            'value' => 'noindex',
-                            'compare' => 'NOT LIKE'
-                        )
+                            'relation' => 'OR',
+                            array(
+                                'key' => 'rank_math_robots',
+                                'value' => 'noindex',
+                                'compare' => 'NOT LIKE'
+                            ),
+                            array(
+                                'key' => 'rank_math_robots',
+                                'compare' => 'NOT EXISTS'
+                            ),
+                        ),
                     )
                 ));
 
@@ -288,10 +295,17 @@ class LLMS_Generator
                             'compare' => 'NOT EXISTS'
                         ),
                         array(
-                            'key' => 'rank_math_robots',
-                            'value' => 'noindex',
-                            'compare' => 'NOT LIKE'
-                        )
+                            'relation' => 'OR',
+                            array(
+                                'key' => 'rank_math_robots',
+                                'value' => 'noindex',
+                                'compare' => 'NOT LIKE'
+                            ),
+                            array(
+                                'key' => 'rank_math_robots',
+                                'compare' => 'NOT EXISTS'
+                            ),
+                        ),
                     )
                 ));
 
