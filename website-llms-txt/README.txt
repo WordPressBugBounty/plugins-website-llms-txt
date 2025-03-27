@@ -1,10 +1,10 @@
 === Website LLMs.txt ===
-Contributors: websitellm, ryhowa
+Contributors: ryhowa, samsonovteamwork
 Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 5.0.1
+Stable tag: 5.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,6 +51,9 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 5.0.2 =
+✅ Fixed: Removed invalid contributor username from readme.txt (only WordPress.org profiles are allowed)
 
 = 5.0.1 =
 
@@ -306,3 +309,6 @@ Fixed potential issues where the custom sitemap URL might not be accessible due 
 	•	Improved fallback logic for posts without SEO meta data.
 
 🚀 This update ensures that LLMS-generated files remain accurate and complete, even on sites that don’t use Rank Math, and improves overall reliability when filtering content by SEO metadata.
+
+= 5.0.2 =
+✅ Fixed: Removed invalid contributor username from readme.txt (only WordPress.org profiles are allowed)
