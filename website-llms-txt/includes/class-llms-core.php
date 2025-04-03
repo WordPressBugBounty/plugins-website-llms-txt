@@ -29,6 +29,12 @@ class LLMS_Core {
         
         // Add required scripts for admin
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+
+        add_action('wp_head', array($this, 'wp_head'));
+    }
+
+    public function wp_head() {
+        echo '<link rel="llms-sitemap" href="' . esc_url( home_url( '/llms.txt' ) ) . '" />' . "\n";
     }
 
     public function get_llms_post() {
@@ -215,6 +221,10 @@ class LLMS_Core {
         $existing_rules = $wp_rewrite->wp_rewrite_rules();
         if (!isset($existing_rules['^llms\.txt$'])) {
             add_rewrite_rule('^llms\.txt$', 'index.php?llms_txt=1', 'top');
+        }
+
+        if (!isset($existing_rules['^ai\.txt$'])) {
+            add_rewrite_rule('^ai\.txt$', 'index.php?llms_txt=1', 'top');
         }
     }
 

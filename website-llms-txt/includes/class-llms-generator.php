@@ -40,6 +40,46 @@ class LLMS_Generator
         add_action('llms_scheduled_update', array($this, 'llms_scheduled_update'));
         add_action('schedule_updates', array($this, 'schedule_updates'));
         add_filter('get_llms_content', array($this, 'get_llms_content'));
+        add_action('init', array($this, 'llms_maybe_create_ai_sitemap_page'));
+    }
+
+    public function llms_maybe_create_ai_sitemap_page() {
+        $auto_create_enabled = apply_filters( 'llms_auto_create_ai_page', true );
+        if ( ! $auto_create_enabled ) {
+            return;
+        }
+
+        $slug = 'ai-sitemap';
+        $existing_page = get_page_by_path( $slug );
+
+        if ( $existing_page ) {
+            return;
+        }
+
+        wp_insert_post( array(
+            'post_title'   => 'AI Sitemap (LLMs.txt)',
+            'post_name'    => $slug,
+            'post_status'  => 'publish',
+            'post_type'    => 'page',
+            'post_author'  => 1,
+            'post_content' => $this->llms_get_ai_sitemap_page_content()
+        ) );
+    }
+
+    public function llms_get_ai_sitemap_page_content() {
+        $sitemap_url = esc_url( home_url( '/llms.txt' ) );
+        return <<<HTML
+<h2>What is LLMs.txt?</h2>
+<p><strong>LLMs.txt</strong> is a simple text-based sitemap for Large Language Models like ChatGPT, Perplexity, Claude, and others. It helps AI systems understand and index your public content more effectively.</p>
+<p>This is the beginning of a new kind of visibility on the web — one that works not just for search engines, but for AI-powered agents and assistants.</p>
+<p>You can view your AI sitemap at: <a href="{$sitemap_url}">{$sitemap_url}</a></p>
+<h3>Why it's important</h3>
+<ul>
+<li>Helps your content get discovered by AI tools</li>
+<li>Works alongside traditional SEO plugins</li>
+<li>Updates automatically as your content grows</li>
+</ul>
+HTML;
     }
 
     public function llms_scheduled_update()
@@ -115,8 +155,11 @@ class LLMS_Generator
     {
         // Try to get meta description from Yoast or RankMath
         $meta_description = $this->get_site_meta_description();
-
-        $output = "\xEF\xBB\xBF" . "# " . get_bloginfo('name') . "\n\n";
+        $slug = 'ai-sitemap';
+        $existing_page = get_page_by_path( $slug );
+        $output = "\xEF\xBB\xBF" . "# LLMs.txt - Sitemap for AI content discovery" . "\n\n";
+        $output .= "# Learn more:" . get_permalink($existing_page) . "\n\n";
+        $output .= "# " . get_bloginfo('name') . "\n\n";
         if ($meta_description) {
             $output .= "> " . $meta_description . "\n\n";
         } else {
@@ -465,12 +508,15 @@ class LLMS_Generator
         $this->generate_content();
         if(defined('FLYWHEEL_PLUGIN_DIR')) {
             $file_path = dirname(ABSPATH) . 'www/' . 'llms.txt';
+            $file_ai_path = dirname(ABSPATH) . 'www/' . 'ai.txt';
         } else {
             $file_path = ABSPATH . 'llms.txt';
+            $file_ai_path = ABSPATH . 'ai.txt';
         }
 
         if (file_exists($upload_path)) {
             $this->wp_filesystem->copy($upload_path, $file_path, true);
+            $this->wp_filesystem->copy($upload_path, $file_ai_path, true);
         }
 
         // Update the hidden post

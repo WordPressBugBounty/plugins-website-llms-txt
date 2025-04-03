@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 5.0.3
+Stable tag: 5.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,18 @@ Automatically generate and manage LLMS.txt files for LLM/AI content understandin
 
 == Description ==
 
-Website LLMs.txt helps search engines and AI systems better understand your website content by automatically generating and managing LLMS.txt files. It integrates seamlessly with popular SEO plugins like Yoast SEO and RankMath.
+Website LLMs.txt helps your website become discoverable in the age of generative AI.
+
+This plugin automatically generates an LLMs.txt file — a simple, structured list of important public URLs from your site — designed specifically for Large Language Models (LLMs) like ChatGPT, Perplexity, Claude, and other AI systems.
+It works much like a traditional XML sitemap, but is optimized for the way AI agents read and learn from the web.
+
+The plugin integrates seamlessly with popular SEO tools like Yoast SEO, Rank Math, and now AIOSEO, automatically excluding content marked as noindex or nofollow.
+
+✅ Future-proof your site for AI discovery
+✅ Lightweight, automatic, and customizable
+✅ No need for manual configuration
+
+Whether you’re running a blog, store, portfolio, or membership site — LLMs.txt ensures your content is seen and understood by the next generation of intelligent assistants.
 
 Features:
 
@@ -51,6 +62,27 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 5.0.4 =
+
+🛠 Improvements & Fixes
+
+✅ Automatic AI Sitemap page generation
+    • The plugin now auto-creates a public /ai-sitemap page explaining what LLMs.txt is and how it improves AI visibility.
+    • The page is only created if it doesn’t already exist, and includes a dynamic link to your actual LLMs sitemap file.
+    • Content is filterable for advanced customization.
+
+✅ Added support for ai.txt as an alternate LLM sitemap path
+    • The plugin now generates both /llms.txt and /ai.txt to maximize compatibility with future AI indexing standards.
+    • Both files are kept in sync and contain the same URL list.
+    • This improves discoverability by AI crawlers that look for ai.txt by default.
+
+✅ Enhanced onboarding & reliability
+    • Improved logic to prevent duplicate pages.
+    • Cleaned up sitemap text formatting for better readability.
+    • Hook-friendly architecture for developers.
+
+🚀 This update makes your site even more AI-ready by exposing your content through both standard and emerging LLM indexing formats — paving the way for visibility in tools like ChatGPT, Perplexity, and beyond.
 
 = 5.0.3 =
 
@@ -343,3 +375,24 @@ Fixed potential issues where the custom sitemap URL might not be accessible due 
     • Posts without SEO meta data are still properly included unless explicitly marked as noindex.
 
 🚀 This update expands SEO plugin compatibility, ensuring more accurate output when working with AIOSEO-powered sites, and avoids accidental indexing of excluded content.
+
+= 5.0.4 =
+
+🛠 Improvements & Fixes
+
+✅ Automatic AI Sitemap page generation
+    • The plugin now auto-creates a public /ai-sitemap page explaining what LLMs.txt is and how it improves AI visibility.
+    • The page is only created if it doesn’t already exist, and includes a dynamic link to your actual LLMs sitemap file.
+    • Content is filterable for advanced customization.
+
+✅ Added support for ai.txt as an alternate LLM sitemap path
+    • The plugin now generates both /llms.txt and /ai.txt to maximize compatibility with future AI indexing standards.
+    • Both files are kept in sync and contain the same URL list.
+    • This improves discoverability by AI crawlers that look for ai.txt by default.
+
+✅ Enhanced onboarding & reliability
+    • Improved logic to prevent duplicate pages.
+    • Cleaned up sitemap text formatting for better readability.
+    • Hook-friendly architecture for developers.
+
+🚀 This update makes your site even more AI-ready by exposing your content through both standard and emerging LLM indexing formats — paving the way for visibility in tools like ChatGPT, Perplexity, and beyond.
