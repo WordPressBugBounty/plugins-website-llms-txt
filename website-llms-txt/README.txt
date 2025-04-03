@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 5.0.2
+Stable tag: 5.0.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,6 +51,22 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 5.0.3 =
+
+🛠 Improvements & Fixes
+
+✅ Added support for AIOSEO plugin
+    • Integrated detection of aioseo_posts table to improve filtering accuracy.
+    • Posts marked with robots_noindex or robots_nofollow in AIOSEO are now correctly excluded from output.
+    • Fallback-safe: the logic only applies if the AIOSEO table exists in the database.
+
+✅ Enhanced compatibility with multiple SEO plugins
+    • Filtering logic now handles both Rank Math and AIOSEO data sources.
+    • Posts without SEO meta data are still properly included unless explicitly marked as noindex.
+
+🚀 This update expands SEO plugin compatibility, ensuring more accurate output when working with AIOSEO-powered sites, and avoids accidental indexing of excluded content.
+
 
 = 5.0.2 =
 ✅ Fixed: Removed invalid contributor username from readme.txt (only WordPress.org profiles are allowed)
@@ -312,3 +328,18 @@ Fixed potential issues where the custom sitemap URL might not be accessible due 
 
 = 5.0.2 =
 ✅ Fixed: Removed invalid contributor username from readme.txt (only WordPress.org profiles are allowed)
+
+= 5.0.3 =
+
+🛠 Improvements & Fixes
+
+✅ Added support for AIOSEO plugin
+    • Integrated detection of aioseo_posts table to improve filtering accuracy.
+    • Posts marked with robots_noindex or robots_nofollow in AIOSEO are now correctly excluded from output.
+    • Fallback-safe: the logic only applies if the AIOSEO table exists in the database.
+
+✅ Enhanced compatibility with multiple SEO plugins
+    • Filtering logic now handles both Rank Math and AIOSEO data sources.
+    • Posts without SEO meta data are still properly included unless explicitly marked as noindex.
+
+🚀 This update expands SEO plugin compatibility, ensuring more accurate output when working with AIOSEO-powered sites, and avoids accidental indexing of excluded content.

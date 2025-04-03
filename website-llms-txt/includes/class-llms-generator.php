@@ -137,6 +137,13 @@ class LLMS_Generator
     {
         $output = "";
 
+        global $wpdb;
+
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}aioseo_posts'" ) === "{$wpdb->prefix}aioseo_posts" ) {
+            add_filter('posts_where', [$this, 'exclude_noindex_nofollow_from_aioseo']);
+            add_filter('posts_join', [$this, 'join_aioseo_table']);
+        }
+
         foreach ($this->settings['post_types'] as $post_type) {
             if ($post_type === 'llms_txt') continue;
 
@@ -216,6 +223,9 @@ class LLMS_Generator
             unset($query);
         }
 
+        remove_filter('posts_where', [$this, 'exclude_noindex_nofollow_from_aioseo']);
+        remove_filter('posts_join', [$this, 'join_aioseo_table']);
+
         unset($output);
         $this->write_file(mb_convert_encoding("---\n\n", 'UTF-8', 'auto'));
     }
@@ -265,10 +275,26 @@ class LLMS_Generator
         return false;
     }
 
+    public function join_aioseo_table( $join ) {
+        global $wpdb;
+        return $join . " LEFT JOIN {$wpdb->prefix}aioseo_posts AS aioseo ON {$wpdb->posts}.ID = aioseo.post_id ";
+    }
+
+    public function exclude_noindex_nofollow_from_aioseo( $where ) {
+        return $where . " AND (aioseo.robots_noindex != 1 AND aioseo.robots_nofollow != 1 OR aioseo.post_id IS NULL)";
+    }
+
     private function generate_detailed_content()
     {
         $output = "#\n" . "# Detailed Content\n\n";
         $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+
+        global $wpdb;
+
+        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}aioseo_posts'" ) === "{$wpdb->prefix}aioseo_posts" ) {
+            add_filter('posts_where', [$this, 'exclude_noindex_nofollow_from_aioseo']);
+            add_filter('posts_join', [$this, 'join_aioseo_table']);
+        }
 
         foreach ($this->settings['post_types'] as $post_type) {
             if ($post_type === 'llms_txt') continue;
@@ -325,6 +351,9 @@ class LLMS_Generator
             wp_reset_postdata();
             unset($query);
         }
+
+        remove_filter('posts_where', [$this, 'exclude_noindex_nofollow_from_aioseo']);
+        remove_filter('posts_join', [$this, 'join_aioseo_table']);
     }
 
     private function format_post_content($post)
