@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 5.0.4
+Stable tag: 5.0.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,19 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 5.0.5 =
+
+✅ Fixed 404 Error for Sitemap XML
+• Resolved an issue where the llms-sitemap.xml endpoint could return a 404 error despite being properly registered.
+• Now correctly sets the HTTP 200 status header for valid sitemap requests using status_header(200), ensuring compatibility with WordPress routing and sitemap indexing.
+• Improved query var handling and rewrite rule registration to guarantee sitemap accessibility.
+
+🧠 Other Improvements
+• Refactored request handling logic to ensure clean output with proper MIME type headers (application/xml).
+• Further stability improvements for Yoast integration and dynamic sitemap indexing.
+
+🧪 Tested with WordPress 6.5 and Yoast SEO 22.x
 
 = 5.0.4 =
 
@@ -396,3 +409,16 @@ Fixed potential issues where the custom sitemap URL might not be accessible due 
     • Hook-friendly architecture for developers.
 
 🚀 This update makes your site even more AI-ready by exposing your content through both standard and emerging LLM indexing formats — paving the way for visibility in tools like ChatGPT, Perplexity, and beyond.
+
+= 5.0.5 =
+
+✅ Fixed 404 Error for Sitemap XML
+• Resolved an issue where the llms-sitemap.xml endpoint could return a 404 error despite being properly registered.
+• Now correctly sets the HTTP 200 status header for valid sitemap requests using status_header(200), ensuring compatibility with WordPress routing and sitemap indexing.
+• Improved query var handling and rewrite rule registration to guarantee sitemap accessibility.
+
+🧠 Other Improvements
+• Refactored request handling logic to ensure clean output with proper MIME type headers (application/xml).
+• Further stability improvements for Yoast integration and dynamic sitemap indexing.
+
+🧪 Tested with WordPress 6.5 and Yoast SEO 22.x
