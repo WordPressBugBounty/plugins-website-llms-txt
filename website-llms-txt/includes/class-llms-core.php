@@ -99,10 +99,12 @@ class LLMS_Core {
                 'default' => array(
                     'post_types' => array('page', 'documentation', 'post'),
                     'max_posts' => 100,
+                    'max_words' => 250,
                     'include_meta' => true,
                     'include_excerpts' => true,
                     'include_taxonomies' => true,
-                    'update_frequency' => 'immediate'
+                    'update_frequency' => 'immediate',
+                    'auto_create_ai_page' => true
                 )
             )
         );
@@ -137,7 +139,8 @@ class LLMS_Core {
         $clean['include_meta'] = !empty($value['include_meta']);
         $clean['include_excerpts'] = !empty($value['include_excerpts']);
         $clean['include_taxonomies'] = !empty($value['include_taxonomies']);
-        
+        $clean['auto_create_ai_page'] = !empty($value['auto_create_ai_page']);
+
         // Sanitize update frequency
         $clean['update_frequency'] = isset($value['update_frequency']) && 
             in_array($value['update_frequency'], array('immediate', 'daily', 'weekly')) ? 

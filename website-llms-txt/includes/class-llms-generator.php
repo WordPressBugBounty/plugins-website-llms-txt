@@ -18,10 +18,12 @@ class LLMS_Generator
         $this->settings = get_option('llms_generator_settings', array(
             'post_types' => array('page', 'documentation', 'post'),
             'max_posts' => 100,
+            'max_words' => 250,
             'include_meta' => true,
             'include_excerpts' => true,
             'include_taxonomies' => true,
-            'update_frequency' => 'immediate'
+            'update_frequency' => 'immediate',
+            'auto_create_ai_page' => true
         ));
 
         // Initialize content cleaner
@@ -44,16 +46,20 @@ class LLMS_Generator
     }
 
     public function llms_maybe_create_ai_sitemap_page() {
-        $auto_create_enabled = apply_filters( 'llms_auto_create_ai_page', true );
+        if(defined('DOING_AJAX') && DOING_AJAX) {
+            return false;
+        }
+
+        $auto_create_enabled = apply_filters( 'llms_auto_create_ai_page', (isset($this->settings['auto_create_ai_page']) ? (bool) $this->settings['auto_create_ai_page'] : true) );
         if ( ! $auto_create_enabled ) {
-            return;
+            return false;
         }
 
         $slug = 'ai-sitemap';
         $existing_page = get_page_by_path( $slug );
 
         if ( $existing_page ) {
-            return;
+            return false;
         }
 
         wp_insert_post( array(
@@ -158,7 +164,9 @@ HTML;
         $slug = 'ai-sitemap';
         $existing_page = get_page_by_path( $slug );
         $output = "\xEF\xBB\xBF" . "# LLMs.txt - Sitemap for AI content discovery" . "\n\n";
-        $output .= "# Learn more:" . get_permalink($existing_page) . "\n\n";
+        if(is_a($existing_page,'WP_Post')) {
+            $output .= "# Learn more:" . get_permalink($existing_page) . "\n\n";
+        }
         $output .= "# " . get_bloginfo('name') . "\n\n";
         if ($meta_description) {
             $output .= "> " . $meta_description . "\n\n";
@@ -198,10 +206,12 @@ HTML;
             $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
 
             $paged = 1;
+            $i = 0;
             do {
                 $query = new WP_Query(array(
                     'post_type' => $post_type,
                     'posts_per_page' => $this->settings['max_posts'],
+                    'fields' => 'ids',
                     'post_status' => 'publish',
                     'orderby' => 'date',
                     'order' => 'DESC',
@@ -227,35 +237,29 @@ HTML;
                     )
                 ));
 
-                if ($query->have_posts()) {
-                    while ($query->have_posts()) {
-                        $query->the_post();
+                if (!empty($query->posts)) {
+                    foreach ($query->posts as $post_id) {
+                        $post = get_post($post_id);
 
-                        if ($this->is_post_indexed(get_post())) {
-                            $meta_description = $this->get_post_meta_description(get_post());
-
-                            if ($meta_description) {
-                                $description = $meta_description;
-                                unset($meta_description);
-                            } else {
-                                $fallback_content = $this->remove_shortcodes(get_the_excerpt() ?: get_the_content());
-                                $fallback_content = $this->content_cleaner->clean($fallback_content);
-                                $description = wp_trim_words($fallback_content, 20, '...');
-                                unset($fallback_content);
-                            }
-
-                            $output = sprintf("- [%s](%s): %s\n",
-                                get_post()->post_title,
-                                get_permalink(get_post()),
-                                $description
-                            );
-
-                            $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
-
-                            unset($description);
+                        if (!$this->is_post_indexed($post)) {
+                            continue;
                         }
 
-                        unset($output);
+                        $description = $this->get_post_meta_description($post);
+                        if (!$description) {
+                            $fallback_content = $this->remove_shortcodes(get_the_excerpt($post_id) ?: get_the_content(null, false, $post));
+                            $fallback_content = $this->content_cleaner->clean($fallback_content);
+                            $description = wp_trim_words($fallback_content, 20, '...');
+                        }
+
+                        $output = sprintf("- [%s](%s): %s\n", $post->post_title, get_permalink($post_id), $description);
+                        $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+
+                        unset($description, $fallback_content, $output, $post);
+
+                        if (++$i % 50 === 0) {
+                            wp_cache_flush();
+                        }
                     }
                 }
 
@@ -345,8 +349,7 @@ HTML;
             $post_type_obj = get_post_type_object($post_type);
             $output = "\n" . "## " . $post_type_obj->labels->name . "\n\n";
             $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
-
-            unset($post_type_obj);
+            unset($post_type_obj, $output);
 
             $paged = 1;
             do {
@@ -357,6 +360,7 @@ HTML;
                     'orderby' => 'date',
                     'order' => 'DESC',
                     'paged' => $paged,
+                    'fields' => 'ids',
                     'meta_query' => array(
                         'relation' => 'AND',
                         array(
@@ -378,12 +382,23 @@ HTML;
                     )
                 ));
 
-                if ($query->have_posts()) {
-                    while ($query->have_posts()) {
-                        $query->the_post();
+                if (!empty($query->posts)) {
+                    $i = 0;
+                    foreach ($query->posts as $post_id) {
+                        $post = get_post($post_id);
 
-                        if ($this->is_post_indexed(get_post())) {
-                            $this->write_file(mb_convert_encoding($this->format_post_content(get_post()), 'UTF-8', 'auto'));
+                        if (!$this->is_post_indexed($post)) {
+                            unset($post);
+                            continue;
+                        }
+
+                        $content = $this->format_post_content($post);
+                        $this->write_file(mb_convert_encoding($content, 'UTF-8', 'auto'));
+
+                        unset($post, $content);
+
+                        if (++$i % 50 === 0) {
+                            wp_cache_flush();
                         }
                     }
                 }
@@ -428,11 +443,11 @@ HTML;
         $output .= "\n";
 
         if ($this->settings['include_excerpts'] && !empty($post->post_excerpt)) {
-            $output .= $this->remove_shortcodes(get_the_excerpt()) . "\n\n";
+            $output .= $this->remove_shortcodes($post->post_excerpt) . "\n\n";
         }
 
         // Clean and add the content
-        $content = $this->content_cleaner->clean($this->remove_shortcodes(wp_trim_words(get_the_content(), $this->settings['max_words'] ?? 250, '...')));
+        $content = wp_trim_words($this->content_cleaner->clean($this->remove_shortcodes($post->post_content)), $this->settings['max_words'] ?? 250, '...');
         $output .= $content . "\n\n";
         $output .= "---\n\n";
 
