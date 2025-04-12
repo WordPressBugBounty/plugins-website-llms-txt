@@ -104,7 +104,8 @@ class LLMS_Core {
                     'include_excerpts' => true,
                     'include_taxonomies' => true,
                     'update_frequency' => 'immediate',
-                    'auto_create_ai_page' => true
+                    'auto_create_ai_page' => false,
+                    'need_check_option' => true,
                 )
             )
         );

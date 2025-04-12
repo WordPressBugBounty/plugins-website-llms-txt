@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 5.0.6
+Stable tag: 5.0.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,34 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 5.0.7 =
+
+✅ New: Optional AI Sitemap Page
+• Added a new setting to disable automatic creation of the AI Sitemap page (ai-sitemap).
+• Users can now manage whether this page is created on init via the plugin settings panel.
+
+🧠 Performance & Memory Usage
+• Improved memory handling during content generation, especially for large post meta datasets.
+• Reduced risk of memory leaks when working with heavy content by loading posts via IDs and flushing cache dynamically.
+
+📄 Content Generation Enhancements
+• Fixed issues related to long post content generation in llms.txt.
+• Added a new option to control the number of words included per post in the generated file (default: 250).
+• Better content trimming and cleaning logic for consistent output.
+
+🔧 Stability & Cleanup
+• Optimized handling of unset variables and object cleanup to avoid bloating memory usage during cron or manual execution.
+
+= 5.0.7 =
+
+✅ Settings Consistency Improvements
+• The plugin now respects the “Include AI Sitemap page” setting more reliably across updates.
+• Internal checks ensure that unnecessary pages are not created or kept when the option is disabled.
+
+🧠 Update-Aware Logic
+• Introduced version-aware behavior to trigger settings-related adjustments only once after plugin updates.
+• Ensures cleaner and more consistent state without manual intervention.
 
 = 5.0.6 =
 
@@ -468,3 +496,13 @@ Fixed potential issues where the custom sitemap URL might not be accessible due 
 • ✅ WordPress 6.5
 • ✅ Yoast SEO 22.x
 • ✅ Rank Math & AIOSEO compatibility verified
+
+= 5.0.7 =
+
+✅ Settings Consistency Improvements
+• The plugin now respects the “Include AI Sitemap page” setting more reliably across updates.
+• Internal checks ensure that unnecessary pages are not created or kept when the option is disabled.
+
+🧠 Update-Aware Logic
+• Introduced version-aware behavior to trigger settings-related adjustments only once after plugin updates.
+• Ensures cleaner and more consistent state without manual intervention.

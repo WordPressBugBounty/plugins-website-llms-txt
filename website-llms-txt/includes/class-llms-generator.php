@@ -23,7 +23,8 @@ class LLMS_Generator
             'include_excerpts' => true,
             'include_taxonomies' => true,
             'update_frequency' => 'immediate',
-            'auto_create_ai_page' => true
+            'auto_create_ai_page' => false,
+            'need_check_option' => true,
         ));
 
         // Initialize content cleaner
@@ -46,6 +47,18 @@ class LLMS_Generator
     }
 
     public function llms_maybe_create_ai_sitemap_page() {
+        if(defined('LLMS_VERSION')) {
+            if (isset($this->settings['auto_create_ai_page'], $this->settings['need_check_option']) && !$this->settings['auto_create_ai_page'] && $this->settings['need_check_option'] || !isset($this->settings['need_check_option'])) {
+                $slug = 'ai-sitemap';
+                $page = get_page_by_path($slug);
+                if ($page && $page->post_type === 'page') {
+                    wp_delete_post($page->ID, true);
+                    $this->settings['need_check_option'] = false;
+                    update_option('llms_generator_settings', $this->settings);
+                }
+            }
+        }
+
         if(defined('DOING_AJAX') && DOING_AJAX) {
             return false;
         }
@@ -57,6 +70,11 @@ class LLMS_Generator
 
         $slug = 'ai-sitemap';
         $existing_page = get_page_by_path( $slug );
+
+
+        if(!$this->settings['auto_create_ai_page']) {
+            $slug = 'ai-sitemap';
+        }
 
         if ( $existing_page ) {
             return false;
