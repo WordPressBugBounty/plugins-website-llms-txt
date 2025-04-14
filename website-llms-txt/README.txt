@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 5.0.7
+Stable tag: 6.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,19 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 6.0.0 =
+
+🛠️ Page Creation Respecting Settings
+• Fixed a logic inconsistency where the AI Sitemap page could still exist even if the related setting was disabled.
+• The plugin now ensures that page creation behavior strictly follows the user’s configuration, both during normal operation and after plugin updates.
+
+
+= 5.0.8 =
+
+🛠️ Page Creation Respecting Settings
+• Fixed a logic inconsistency where the AI Sitemap page could still exist even if the related setting was disabled.
+• The plugin now ensures that page creation behavior strictly follows the user’s configuration, both during normal operation and after plugin updates.
 
 = 5.0.7 =
 
@@ -506,3 +519,15 @@ Fixed potential issues where the custom sitemap URL might not be accessible due 
 🧠 Update-Aware Logic
 • Introduced version-aware behavior to trigger settings-related adjustments only once after plugin updates.
 • Ensures cleaner and more consistent state without manual intervention.
+
+= 5.0.8 =
+
+🛠️ Page Creation Respecting Settings
+• Fixed a logic inconsistency where the AI Sitemap page could still exist even if the related setting was disabled.
+• The plugin now ensures that page creation behavior strictly follows the user’s configuration, both during normal operation and after plugin updates.
+
+= 6.0.0 =
+
+🛠️ Page Creation Respecting Settings
+• Fixed a logic inconsistency where the AI Sitemap page could still exist even if the related setting was disabled.
+• The plugin now ensures that page creation behavior strictly follows the user’s configuration, both during normal operation and after plugin updates.

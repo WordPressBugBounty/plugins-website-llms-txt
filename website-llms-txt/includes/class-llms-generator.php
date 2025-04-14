@@ -23,7 +23,6 @@ class LLMS_Generator
             'include_excerpts' => true,
             'include_taxonomies' => true,
             'update_frequency' => 'immediate',
-            'auto_create_ai_page' => false,
             'need_check_option' => true,
         ));
 
@@ -46,64 +45,18 @@ class LLMS_Generator
         add_action('init', array($this, 'llms_maybe_create_ai_sitemap_page'));
     }
 
-    public function llms_maybe_create_ai_sitemap_page() {
-        if(defined('LLMS_VERSION')) {
-            if (isset($this->settings['auto_create_ai_page'], $this->settings['need_check_option']) && !$this->settings['auto_create_ai_page'] && $this->settings['need_check_option'] || !isset($this->settings['need_check_option'])) {
-                $slug = 'ai-sitemap';
-                $page = get_page_by_path($slug);
-                if ($page && $page->post_type === 'page') {
-                    wp_delete_post($page->ID, true);
-                    $this->settings['need_check_option'] = false;
-                    update_option('llms_generator_settings', $this->settings);
-                }
+    public function llms_maybe_create_ai_sitemap_page()
+    {
+        if (!isset($this->settings['removed_ai_sitemap']))
+        {
+            $page = get_page_by_path('ai-sitemap');
+            if ($page && $page->post_type === 'page')
+            {
+                wp_delete_post($page->ID, true);
+                $this->settings['removed_ai_sitemap'] = true;
+                update_option('llms_generator_settings', $this->settings);
             }
         }
-
-        if(defined('DOING_AJAX') && DOING_AJAX) {
-            return false;
-        }
-
-        $auto_create_enabled = apply_filters( 'llms_auto_create_ai_page', (isset($this->settings['auto_create_ai_page']) ? (bool) $this->settings['auto_create_ai_page'] : true) );
-        if ( ! $auto_create_enabled ) {
-            return false;
-        }
-
-        $slug = 'ai-sitemap';
-        $existing_page = get_page_by_path( $slug );
-
-
-        if(!$this->settings['auto_create_ai_page']) {
-            $slug = 'ai-sitemap';
-        }
-
-        if ( $existing_page ) {
-            return false;
-        }
-
-        wp_insert_post( array(
-            'post_title'   => 'AI Sitemap (LLMs.txt)',
-            'post_name'    => $slug,
-            'post_status'  => 'publish',
-            'post_type'    => 'page',
-            'post_author'  => 1,
-            'post_content' => $this->llms_get_ai_sitemap_page_content()
-        ) );
-    }
-
-    public function llms_get_ai_sitemap_page_content() {
-        $sitemap_url = esc_url( home_url( '/llms.txt' ) );
-        return <<<HTML
-<h2>What is LLMs.txt?</h2>
-<p><strong>LLMs.txt</strong> is a simple text-based sitemap for Large Language Models like ChatGPT, Perplexity, Claude, and others. It helps AI systems understand and index your public content more effectively.</p>
-<p>This is the beginning of a new kind of visibility on the web — one that works not just for search engines, but for AI-powered agents and assistants.</p>
-<p>You can view your AI sitemap at: <a href="{$sitemap_url}">{$sitemap_url}</a></p>
-<h3>Why it's important</h3>
-<ul>
-<li>Helps your content get discovered by AI tools</li>
-<li>Works alongside traditional SEO plugins</li>
-<li>Updates automatically as your content grows</li>
-</ul>
-HTML;
     }
 
     public function llms_scheduled_update()

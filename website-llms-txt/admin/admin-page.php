@@ -132,7 +132,7 @@ if (isset($_GET['settings-updated']) &&
                     <?php esc_html_e('Maximum words:', 'website-llms-txt'); ?>
                     <input type="number"
                            name="llms_generator_settings[max_words]"
-                           value="<?php echo esc_attr($settings['max_words']); ?>"
+                           value="<?php echo esc_attr($settings['max_words'] ?? 250); ?>"
                            min="1"
                            max="10000">
                 </label>
@@ -165,16 +165,6 @@ if (isset($_GET['settings-updated']) &&
                            value="1"
                            <?php checked(!empty($settings['include_taxonomies'])); ?>>
                     <?php esc_html_e('Include taxonomies (categories, tags, etc.)', 'website-llms-txt'); ?>
-                </label>
-            </p>
-
-            <p>
-                <label>
-                    <input type="checkbox"
-                           name="llms_generator_settings[auto_create_ai_page]"
-                           value="1"
-                           <?php checked(!empty($settings['auto_create_ai_page'])); ?>>
-                    <?php esc_html_e('Include AI Sitemap page', 'website-llms-txt'); ?>
                 </label>
             </p>
 

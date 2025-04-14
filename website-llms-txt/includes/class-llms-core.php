@@ -104,7 +104,6 @@ class LLMS_Core {
                     'include_excerpts' => true,
                     'include_taxonomies' => true,
                     'update_frequency' => 'immediate',
-                    'auto_create_ai_page' => false,
                     'need_check_option' => true,
                 )
             )
@@ -140,7 +139,6 @@ class LLMS_Core {
         $clean['include_meta'] = !empty($value['include_meta']);
         $clean['include_excerpts'] = !empty($value['include_excerpts']);
         $clean['include_taxonomies'] = !empty($value['include_taxonomies']);
-        $clean['auto_create_ai_page'] = !empty($value['auto_create_ai_page']);
 
         // Sanitize update frequency
         $clean['update_frequency'] = isset($value['update_frequency']) && 
