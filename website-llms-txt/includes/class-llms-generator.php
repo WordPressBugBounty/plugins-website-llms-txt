@@ -43,6 +43,7 @@ class LLMS_Generator
         add_action('schedule_updates', array($this, 'schedule_updates'));
         add_filter('get_llms_content', array($this, 'get_llms_content'));
         add_action('init', array($this, 'llms_maybe_create_ai_sitemap_page'));
+        add_action('llms_update_llms_file_cron', array($this, 'update_llms_file'));
     }
 
     public function llms_maybe_create_ai_sitemap_page()
@@ -152,7 +153,7 @@ class LLMS_Generator
 
     private function remove_shortcodes($content)
     {
-        return preg_replace('/\[[^\]]+\]/', '', $content);
+        return strip_tags(preg_replace('/\[[^\]]+\]/', '', $content));
     }
 
     private function generate_overview()
@@ -170,7 +171,10 @@ class LLMS_Generator
             if ($post_type === 'llms_txt') continue;
 
             $post_type_obj = get_post_type_object($post_type);
-            $output = "\n" . "## " . $post_type_obj->labels->name . "\n\n";
+            if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
+                $output = "\n" . "## " . $post_type_obj->labels->name . "\n\n";
+                $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+            }
 
             unset($post_type_obj);
 
@@ -220,7 +224,7 @@ class LLMS_Generator
                         if (!$description) {
                             $fallback_content = $this->remove_shortcodes(get_the_excerpt($post_id) ?: get_the_content(null, false, $post));
                             $fallback_content = $this->content_cleaner->clean($fallback_content);
-                            $description = wp_trim_words($fallback_content, 20, '...');
+                            $description = wp_trim_words(strip_tags($fallback_content), 20, '...');
                         }
 
                         $output = sprintf("- [%s](%s): %s\n", $post->post_title, get_permalink($post_id), $description);
@@ -399,6 +403,13 @@ class LLMS_Generator
             $output .= "- Modified: " . get_the_modified_date('Y-m-d', $post) . "\n";
             $output .= "- URL: " . get_permalink($post) . "\n";
 
+            if (isset($post->post_type) && $post->post_type === 'product') {
+                $sku = get_post_meta($post->ID, '_sku', true);
+                if (!empty($sku)) {
+                    $output .= '- SKU: ' . esc_html($sku) . "\n";
+                }
+            }
+
             if ($this->settings['include_taxonomies']) {
                 $taxonomies = get_object_taxonomies($post->post_type, 'objects');
                 foreach ($taxonomies as $tax) {
@@ -458,11 +469,17 @@ class LLMS_Generator
 
     public function handle_post_update($post_id, $post, $update)
     {
-        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
-        if (!in_array($post->post_type, $this->settings['post_types'])) return;
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+
+        if (!in_array($post->post_type, $this->settings['post_types'])) {
+            return;
+        }
 
         if ($this->settings['update_frequency'] === 'immediate') {
-            $this->update_llms_file();
+            wp_clear_scheduled_hook('llms_update_llms_file_cron');
+            wp_schedule_single_event(time() + 30, 'llms_update_llms_file_cron');
         }
     }
 
@@ -473,7 +490,8 @@ class LLMS_Generator
         }
 
         if ($this->settings['update_frequency'] === 'immediate') {
-            $this->update_llms_file();
+            wp_clear_scheduled_hook('llms_update_llms_file_cron');
+            wp_schedule_single_event(time() + 30, 'llms_update_llms_file_cron');
         }
     }
 

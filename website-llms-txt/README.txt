@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 6.0.0
+Stable tag: 6.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,21 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 6.0.1 =
+
+🛠️ Breakdance Compatibility Fix
+• Fixed an issue where enabling “instant” updates for the llms.txt file on post save caused a 500 error when using the latest version of Breakdance Builder.
+• Now, immediate updates are handled safely without interrupting the save process.
+
+⏱️ Improved Cron Handling
+• Switched to using a single scheduled event (wp_schedule_single_event) instead of triggering file updates directly during shutdown.
+• This ensures better compatibility and stability, especially on heavy or slower servers.
+
+➕ WooCommerce SKU Support
+• Added SKU output if the post type is a WooCommerce product.
+• The llms.txt file now includes a line like - SKU: [Product SKU] when available.
+
 
 = 6.0.0 =
 
@@ -531,3 +546,17 @@ Fixed potential issues where the custom sitemap URL might not be accessible due 
 🛠️ Page Creation Respecting Settings
 • Fixed a logic inconsistency where the AI Sitemap page could still exist even if the related setting was disabled.
 • The plugin now ensures that page creation behavior strictly follows the user’s configuration, both during normal operation and after plugin updates.
+
+= 6.0.1 =
+
+🛠️ Breakdance Compatibility Fix
+• Fixed an issue where enabling “instant” updates for the llms.txt file on post save caused a 500 error when using the latest version of Breakdance Builder.
+• Now, immediate updates are handled safely without interrupting the save process.
+
+⏱️ Improved Cron Handling
+• Switched to using a single scheduled event (wp_schedule_single_event) instead of triggering file updates directly during shutdown.
+• This ensures better compatibility and stability, especially on heavy or slower servers.
+
+➕ WooCommerce SKU Support
+• Added SKU output if the post type is a WooCommerce product.
+• The llms.txt file now includes a line like - SKU: [Product SKU] when available.
