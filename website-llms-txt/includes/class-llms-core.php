@@ -31,6 +31,38 @@ class LLMS_Core {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
 
         add_action('wp_head', array($this, 'wp_head'));
+
+        add_action('all_admin_notices', array($this, 'all_admin_notices'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_notice_script'));
+        add_action('wp_ajax_dismiss_llms_admin_notice', array($this, 'dismiss_llms_admin_notice'));
+    }
+
+    public function all_admin_notices() {
+        if (get_user_meta(get_current_user_id(), 'llms_notice_dismissed', true)) {
+            return;
+        }
+        ?>
+        <div class="notice updated is-dismissible llms-admin-notice">
+            <p><?php _e('Website LLMs.txt - Want new features? Suggest and vote to shape our plugin development roadmap.', 'website-llms-txt'); ?>
+                <a href="https://x.com/ryhowww/status/1909712881387462772" target="_blank">Twitter</a> |
+                <a href="https://wordpress.org/support/?post_type=topic&p=18406423">WP Forums</a>
+            </p>
+        </div>
+        <?php
+    }
+
+    public function enqueue_notice_script() {
+        wp_enqueue_script('llms-notice-script', LLMS_PLUGIN_URL . 'admin/notice-dismiss.js', array('jquery'), LLMS_VERSION, true);
+        wp_localize_script('llms-notice-script', 'llmsNoticeAjax', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce'    => wp_create_nonce('llms_dismiss_notice')
+        ));
+    }
+
+    public function dismiss_llms_admin_notice() {
+        check_ajax_referer('llms_dismiss_notice', 'nonce');
+        update_user_meta(get_current_user_id(), 'llms_notice_dismissed', 1);
+        wp_send_json_success();
     }
 
     public function wp_head() {
@@ -53,10 +85,6 @@ class LLMS_Core {
         // Initialize generator after post type
         require_once LLMS_PLUGIN_DIR . 'includes/class-llms-generator.php';
         $this->generator = new LLMS_Generator();
-        
-        // Add rewrite rules
-        $this->add_rewrite_rule();
-        add_filter('query_vars', array($this, 'add_query_vars'));
         add_action('template_redirect', array($this, 'handle_llms_request'));
     }
 
@@ -176,10 +204,6 @@ class LLMS_Core {
         wp_enqueue_script('llms-admin-script');
     }
 
-    public function activate() {
-        flush_rewrite_rules();
-    }
-
     public function add_admin_menu() {
         add_menu_page(
             'LLMs.txt Manager',
@@ -210,29 +234,16 @@ class LLMS_Core {
         do_action('llms_clear_seo_caches');
         flush_rewrite_rules();
 
+        wp_clear_scheduled_hook('llms_update_llms_file_cron');
+        wp_schedule_single_event(time() + 2, 'llms_update_llms_file_cron');
+
+
         wp_safe_redirect(add_query_arg(array(
             'page' => 'llms-file-manager',
             'cache_cleared' => 'true',
             '_wpnonce' => wp_create_nonce('llms_cache_cleared')
         ), admin_url('admin.php')));
         exit;
-    }
-
-    public function add_rewrite_rule() {
-        global $wp_rewrite;
-        $existing_rules = $wp_rewrite->wp_rewrite_rules();
-        if (!isset($existing_rules['^llms\.txt$'])) {
-            add_rewrite_rule('^llms\.txt$', 'index.php?llms_txt=1', 'top');
-        }
-
-        if (!isset($existing_rules['^ai\.txt$'])) {
-            add_rewrite_rule('^ai\.txt$', 'index.php?llms_txt=1', 'top');
-        }
-    }
-
-    public function add_query_vars($vars) {
-        $vars[] = 'llms_txt';
-        return $vars;
     }
 
     public function handle_llms_request() {

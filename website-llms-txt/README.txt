@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 6.0.1
+Stable tag: 6.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,19 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 6.0.2 =
+
+🌐 Multisite Support (Beta)
+• The plugin now supports WordPress Multisite environments.
+• Each site now stores and serves its own `llms.txt` and `ai.txt` content independently.
+• Scheduled cron tasks are isolated per site to ensure accurate and isolated updates.
+• Multisite-aware hooks implemented in `template_redirect` to correctly output `.txt` files on mapped domains.
+
+📢 Admin Notice for Feature Suggestions
+• Added a dismissible admin notice on new plugin installs to gather feedback and feature suggestions from users.
+• Links included to Twitter and WP.org support forum for easy community engagement.
+• Let’s coordinate on Slack for the next release to align on roadmap input strategy.
 
 = 6.0.1 =
 
@@ -560,3 +573,16 @@ Fixed potential issues where the custom sitemap URL might not be accessible due 
 ➕ WooCommerce SKU Support
 • Added SKU output if the post type is a WooCommerce product.
 • The llms.txt file now includes a line like - SKU: [Product SKU] when available.
+
+= 6.0.2 =
+
+🌐 Multisite Support (Beta)
+• The plugin now supports WordPress Multisite environments.
+• Each site now stores and serves its own `llms.txt` and `ai.txt` content independently.
+• Scheduled cron tasks are isolated per site to ensure accurate and isolated updates.
+• Multisite-aware hooks implemented in `template_redirect` to correctly output `.txt` files on mapped domains.
+
+📢 Admin Notice for Feature Suggestions
+• Added a dismissible admin notice on new plugin installs to gather feedback and feature suggestions from users.
+• Links included to Twitter and WP.org support forum for easy community engagement.
+• Let’s coordinate on Slack for the next release to align on roadmap input strategy.

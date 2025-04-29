@@ -12,6 +12,7 @@ class LLMS_Generator
     private $wp_filesystem;
     private $llms_path;
     private $write_log;
+    private $llms_name;
 
     public function __construct()
     {
@@ -44,6 +45,18 @@ class LLMS_Generator
         add_filter('get_llms_content', array($this, 'get_llms_content'));
         add_action('init', array($this, 'llms_maybe_create_ai_sitemap_page'));
         add_action('llms_update_llms_file_cron', array($this, 'update_llms_file'));
+        add_action('template_redirect', array($this, 'get_llms_file_content'));
+    }
+
+    public function get_llms_file_content() {
+        if(isset($_SERVER['REQUEST_URI'])) {
+            if(strpos($_SERVER['REQUEST_URI'], 'llms.txt') !== false || strpos($_SERVER['REQUEST_URI'], 'ai.txt') !== false) {
+                status_header(200);
+                header('Content-Type: text/plain; charset=utf-8');
+                echo esc_html($this->get_llms_content(''));
+                exit;
+            }
+        }
     }
 
     public function llms_maybe_create_ai_sitemap_page()
@@ -77,6 +90,12 @@ class LLMS_Generator
 
     public function init_generator($force = false)
     {
+
+        $siteurl = get_option('siteurl');
+        if($siteurl) {
+            $this->llms_name = parse_url($siteurl)['host'];
+        }
+
         if ($this->settings['update_frequency'] !== 'immediate') {
             do_action('schedule_updates');
         }
@@ -105,7 +124,7 @@ class LLMS_Generator
         if ($this->wp_filesystem) {
             if (!$this->llms_path) {
                 $upload_dir = wp_upload_dir();
-                $this->llms_path = $upload_dir['basedir'] . '/llms.txt';
+                $this->llms_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
             }
 
             file_put_contents($this->llms_path, $content, FILE_APPEND | LOCK_EX);
@@ -115,7 +134,7 @@ class LLMS_Generator
     public function get_llms_content($content)
     {
         $upload_dir = wp_upload_dir();
-        $upload_path = $upload_dir['basedir'] . '/llms.txt';
+        $upload_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
         if (file_exists($upload_path)) {
             $content .= file_get_contents($upload_path);
         }
@@ -158,8 +177,6 @@ class LLMS_Generator
 
     private function generate_overview()
     {
-        $output = "";
-
         global $wpdb;
 
         if ( $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}aioseo_posts'" ) === "{$wpdb->prefix}aioseo_posts" ) {
@@ -169,6 +186,7 @@ class LLMS_Generator
 
         foreach ($this->settings['post_types'] as $post_type) {
             if ($post_type === 'llms_txt') continue;
+            $output = '';
 
             $post_type_obj = get_post_type_object($post_type);
             if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
@@ -321,8 +339,11 @@ class LLMS_Generator
         foreach ($this->settings['post_types'] as $post_type) {
             if ($post_type === 'llms_txt') continue;
 
+            $output = '';
             $post_type_obj = get_post_type_object($post_type);
-            $output = "\n" . "## " . $post_type_obj->labels->name . "\n\n";
+            if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
+                $output = "\n" . "## " . $post_type_obj->labels->name . "\n\n";
+            }
             $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
             unset($post_type_obj, $output);
 
@@ -498,7 +519,8 @@ class LLMS_Generator
     public function handle_term_update($term_id)
     {
         if ($this->settings['update_frequency'] === 'immediate') {
-            $this->update_llms_file();
+            wp_clear_scheduled_hook('llms_update_llms_file_cron');
+            wp_schedule_single_event(time() + 30, 'llms_update_llms_file_cron');
         }
     }
 
@@ -513,14 +535,21 @@ class LLMS_Generator
         if(defined('FLYWHEEL_PLUGIN_DIR')) {
             $file_path = dirname(ABSPATH) . 'www/' . 'llms.txt';
             $file_ai_path = dirname(ABSPATH) . 'www/' . 'ai.txt';
+            if (file_exists($file_path)) {
+                unlink($file_path);
+            }
+            if (file_exists($file_ai_path)) {
+                unlink($file_ai_path);
+            }
         } else {
             $file_path = ABSPATH . 'llms.txt';
             $file_ai_path = ABSPATH . 'ai.txt';
-        }
-
-        if (file_exists($upload_path)) {
-            $this->wp_filesystem->copy($upload_path, $file_path, true);
-            $this->wp_filesystem->copy($upload_path, $file_ai_path, true);
+            if (file_exists($file_path)) {
+                unlink($file_path);
+            }
+            if (file_exists($file_ai_path)) {
+                unlink($file_ai_path);
+            }
         }
 
         // Update the hidden post
