@@ -33,6 +33,7 @@ if (isset($_GET['settings-updated']) &&
             <p><?php esc_html_e('File is being auto-generated based on your settings.', 'website-llms-txt'); ?></p>
             <p><?php esc_html_e('View files:', 'website-llms-txt'); ?></p>
             <ul>
+                <li><a href="<?php echo esc_url(home_url('/ai.txt')); ?>" target="_blank"><?php echo esc_url(home_url('/ai.txt')); ?></a></li>
                 <li><a href="<?php echo esc_url(home_url('/llms.txt')); ?>" target="_blank"><?php echo esc_url(home_url('/llms.txt')); ?></a></li>
                 <?php if (class_exists('RankMath') || (defined('WPSEO_VERSION') && class_exists('WPSEO_Sitemaps'))): ?>
                     <li><a href="<?php echo esc_url(home_url('/sitemap_index.xml')); ?>" target="_blank"><?php echo esc_url(home_url('/sitemap_index.xml')); ?></a></li>

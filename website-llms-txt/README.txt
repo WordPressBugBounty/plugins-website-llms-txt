@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 6.0.2
+Stable tag: 6.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,31 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 6.0.4 =
+
+🌐 Multisite Link Format Change
+• For multisite installations, .txt files are now accessible via trailing slash URLs:
+example.com/llms.txt/ and example.com/ai.txt/.
+• This ensures compatibility across various server environments and mapped domain setups.
+• For single-site setups, physical .txt files are still generated and stored in the root directory.
+
+🔧 Yoast SEO Exclusion Fix
+• Fixed an issue where pages marked with noindex or nofollow in Yoast SEO were not properly excluded from the .txt output.
+• Now both _yoast_wpseo_meta-robots-noindex and _yoast_wpseo_meta-robots-nofollow are fully respected.
+
+= 6.0.3 =
+
+🐛 Fix: 404 Not Found on NGINX Servers
+• Resolved an issue where .txt files (llms.txt, ai.txt) returned a 404 error on NGINX-based hosting environments.
+• Rewrite rules are now properly flushed and executed without needing manual permalink updates.
+
+💰 Product Price Output
+• Product prices are now displayed as plain text values (e.g., 56.00 USD) instead of HTML when WooCommerce support is enabled.
+• Ensures clean and readable output for price values in llms.txt.
+
+🔄 Important: Clear Cache After Update
+• After updating to this version, please clear your site’s cache (including server-side and CDN cache) to ensure .txt file endpoints load correctly.
 
 = 6.0.2 =
 
@@ -586,3 +611,28 @@ Fixed potential issues where the custom sitemap URL might not be accessible due 
 • Added a dismissible admin notice on new plugin installs to gather feedback and feature suggestions from users.
 • Links included to Twitter and WP.org support forum for easy community engagement.
 • Let’s coordinate on Slack for the next release to align on roadmap input strategy.
+
+= 6.0.3 =
+
+🐛 Fix: 404 Not Found on NGINX Servers
+• Resolved an issue where .txt files (llms.txt, ai.txt) returned a 404 error on NGINX-based hosting environments.
+• Rewrite rules are now properly flushed and executed without needing manual permalink updates.
+
+💰 Product Price Output
+• Product prices are now displayed as plain text values (e.g., 56.00 USD) instead of HTML when WooCommerce support is enabled.
+• Ensures clean and readable output for price values in llms.txt.
+
+🔄 Important: Clear Cache After Update
+• After updating to this version, please clear your site’s cache (including server-side and CDN cache) to ensure .txt file endpoints load correctly.
+
+= 6.0.4 =
+
+🌐 Multisite Link Format Change
+• For multisite installations, .txt files are now accessible via trailing slash URLs:
+example.com/llms.txt/ and example.com/ai.txt/.
+• This ensures compatibility across various server environments and mapped domain setups.
+• For single-site setups, physical .txt files are still generated and stored in the root directory.
+
+🔧 Yoast SEO Exclusion Fix
+• Fixed an issue where pages marked with noindex or nofollow in Yoast SEO were not properly excluded from the .txt output.
+• Now both _yoast_wpseo_meta-robots-noindex and _yoast_wpseo_meta-robots-nofollow are fully respected.

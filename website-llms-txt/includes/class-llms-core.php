@@ -85,6 +85,10 @@ class LLMS_Core {
         // Initialize generator after post type
         require_once LLMS_PLUGIN_DIR . 'includes/class-llms-generator.php';
         $this->generator = new LLMS_Generator();
+
+        // Add rewrite rules
+        $this->add_rewrite_rule();
+        add_filter('query_vars', array($this, 'add_query_vars'));
         add_action('template_redirect', array($this, 'handle_llms_request'));
     }
 
@@ -204,6 +208,10 @@ class LLMS_Core {
         wp_enqueue_script('llms-admin-script');
     }
 
+    public function activate() {
+        flush_rewrite_rules();
+    }
+
     public function add_admin_menu() {
         add_menu_page(
             'LLMs.txt Manager',
@@ -232,6 +240,7 @@ class LLMS_Core {
 
         check_admin_referer('clear_caches', 'clear_caches_nonce');
         do_action('llms_clear_seo_caches');
+        $this->add_rewrite_rule();
         flush_rewrite_rules();
 
         wp_clear_scheduled_hook('llms_update_llms_file_cron');
@@ -244,6 +253,20 @@ class LLMS_Core {
             '_wpnonce' => wp_create_nonce('llms_cache_cleared')
         ), admin_url('admin.php')));
         exit;
+    }
+
+    public function add_rewrite_rule() {
+        global $wp_rewrite;
+
+        if($wp_rewrite) {
+            $wp_rewrite->add_rule( 'llms\.txt$', 'index.php?llms_txt=1', 'top' );
+            $wp_rewrite->add_rule( 'ai\.txt$', 'index.php?llms_txt=1', 'top' );
+        }
+    }
+
+    public function add_query_vars($vars) {
+        $vars[] = 'llms_txt';
+        return $vars;
     }
 
     public function handle_llms_request() {

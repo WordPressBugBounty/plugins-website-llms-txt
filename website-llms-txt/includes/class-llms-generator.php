@@ -45,18 +45,6 @@ class LLMS_Generator
         add_filter('get_llms_content', array($this, 'get_llms_content'));
         add_action('init', array($this, 'llms_maybe_create_ai_sitemap_page'));
         add_action('llms_update_llms_file_cron', array($this, 'update_llms_file'));
-        add_action('template_redirect', array($this, 'get_llms_file_content'));
-    }
-
-    public function get_llms_file_content() {
-        if(isset($_SERVER['REQUEST_URI'])) {
-            if(strpos($_SERVER['REQUEST_URI'], 'llms.txt') !== false || strpos($_SERVER['REQUEST_URI'], 'ai.txt') !== false) {
-                status_header(200);
-                header('Content-Type: text/plain; charset=utf-8');
-                echo esc_html($this->get_llms_content(''));
-                exit;
-            }
-        }
     }
 
     public function llms_maybe_create_ai_sitemap_page()
@@ -212,8 +200,16 @@ class LLMS_Generator
                     'meta_query' => array(
                         'relation' => 'AND',
                         array(
-                            'key' => '_yoast_wpseo_meta-robots-nofollow',
-                            'compare' => 'NOT EXISTS'
+                            'relation' => 'OR',
+                            array(
+                                'key' => '_yoast_wpseo_meta-robots-noindex',
+                                'value' => '1',
+                                'compare' => '!='
+                            ),
+                            array(
+                                'key' => '_yoast_wpseo_meta-robots-noindex',
+                                'compare' => 'NOT EXISTS'
+                            ),
                         ),
                         array(
                             'relation' => 'OR',
@@ -360,8 +356,16 @@ class LLMS_Generator
                     'meta_query' => array(
                         'relation' => 'AND',
                         array(
-                            'key' => '_yoast_wpseo_meta-robots-nofollow',
-                            'compare' => 'NOT EXISTS'
+                            'relation' => 'OR',
+                            array(
+                                'key' => '_yoast_wpseo_meta-robots-noindex',
+                                'value' => '1',
+                                'compare' => '!='
+                            ),
+                            array(
+                                'key' => '_yoast_wpseo_meta-robots-noindex',
+                                'compare' => 'NOT EXISTS'
+                            ),
                         ),
                         array(
                             'relation' => 'OR',
@@ -428,6 +432,12 @@ class LLMS_Generator
                 $sku = get_post_meta($post->ID, '_sku', true);
                 if (!empty($sku)) {
                     $output .= '- SKU: ' . esc_html($sku) . "\n";
+                }
+
+                $price = get_post_meta($post->ID, '_price', true);
+                $currency = get_option('woocommerce_currency');
+                if (!empty($price)) {
+                    $output .= "- Price: " . number_format((float)$price, 2) . " " . $currency . "\n";
                 }
             }
 
@@ -531,6 +541,8 @@ class LLMS_Generator
         if (file_exists($upload_path)) {
             unlink($upload_path);
         }
+
+        $upload_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
         $this->generate_content();
         if(defined('FLYWHEEL_PLUGIN_DIR')) {
             $file_path = dirname(ABSPATH) . 'www/' . 'llms.txt';
@@ -549,6 +561,13 @@ class LLMS_Generator
             }
             if (file_exists($file_ai_path)) {
                 unlink($file_ai_path);
+            }
+        }
+
+        if ( ! is_multisite() ) {
+            if (file_exists($upload_path)) {
+                $this->wp_filesystem->copy($upload_path, $file_path, true);
+                $this->wp_filesystem->copy($upload_path, $file_ai_path, true);
             }
         }
 
