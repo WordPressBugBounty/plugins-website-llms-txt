@@ -7,26 +7,27 @@ class LLMS_Core {
     /** @var LLMS_Generator */
     private $generator;
 
-    public function __construct() {
+    public function __construct()
+    {
         // Register activation hook
         register_activation_hook(LLMS_PLUGIN_FILE, array($this, 'activate'));
-        
+
         // Initialize core functionality
         add_action('init', array($this, 'init'), 0);
-        
+
         // Admin menu
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_filter('plugin_action_links_' . plugin_basename(LLMS_PLUGIN_FILE), array($this, 'add_settings_link'));
-        
+
         // Handle cache clearing
         add_action('admin_post_clear_caches', array($this, 'handle_cache_clearing'));
-        
+
         // Initialize SEO integrations before post type registration
         add_action('init', array($this, 'init_seo_integrations'), -1);
 
         // Register settings
         add_action('admin_init', array($this, 'register_settings'));
-        
+
         // Add required scripts for admin
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
 
@@ -161,11 +162,11 @@ class LLMS_Core {
         
         // Sanitize max posts
         $clean['max_posts'] = isset($value['max_posts']) ? 
-            min(max(absint($value['max_posts']), 1), 1000) : 100;
+            min(max(absint($value['max_posts']), 1), 100000) : 100;
 
         // Sanitize max posts
         $clean['max_words'] = isset($value['max_words']) ?
-            min(max(absint($value['max_words']), 1), 10000) : 250;
+            min(max(absint($value['max_words']), 1), 100000) : 250;
         
         // Sanitize boolean values
         $clean['include_meta'] = !empty($value['include_meta']);
@@ -243,6 +244,17 @@ class LLMS_Core {
         $this->add_rewrite_rule();
         flush_rewrite_rules();
 
+        $upload_dir = wp_upload_dir();
+        $upload_path = $upload_dir['basedir'] . '/llms.txt';
+        if (file_exists($upload_path)) {
+            unlink($upload_path);
+        }
+
+        $upload_path = $upload_dir['basedir'] . '/ai.txt';
+        if (file_exists($upload_path)) {
+            unlink($upload_path);
+        }
+
         wp_clear_scheduled_hook('llms_update_llms_file_cron');
         wp_schedule_single_event(time() + 2, 'llms_update_llms_file_cron');
 
@@ -259,8 +271,8 @@ class LLMS_Core {
         global $wp_rewrite;
 
         if($wp_rewrite) {
-            $wp_rewrite->add_rule( 'llms\.txt$', 'index.php?llms_txt=1', 'top' );
-            $wp_rewrite->add_rule( 'ai\.txt$', 'index.php?llms_txt=1', 'top' );
+            $wp_rewrite->add_rule('llms.txt', 'index.php?llms_txt=1', 'top');
+            $wp_rewrite->add_rule('ai.txt', 'index.php?llms_txt=1', 'top');
         }
     }
 

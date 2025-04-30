@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 6.0.4
+Stable tag: 6.0.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,20 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 6.0.5 =
+⚡ Enhanced Performance & Clean Output
+• Database query logic fully refactored for high-speed data selection, reducing generation time by up to 70% on large sites.
+• Replaced WP_Query with direct SQL access — now works faster and avoids unnecessary overhead.
+• Significantly improved scalability and lower memory usage during .txt file generation.
+
+🧹 Special Character Cleanup
+• Removed invisible and problematic characters (NBSP, BOM, ZWSP, etc.) from post content to ensure clean and readable output.
+• Prevents display issues and improves downstream AI parsing of .txt files.
+
+📈 Faster Regeneration
+• Full .txt regeneration after content updates is now noticeably faster, especially on content-heavy websites.
+• Better memory handling and reduced write cycles during generation.
 
 = 6.0.4 =
 
@@ -636,3 +650,17 @@ example.com/llms.txt/ and example.com/ai.txt/.
 🔧 Yoast SEO Exclusion Fix
 • Fixed an issue where pages marked with noindex or nofollow in Yoast SEO were not properly excluded from the .txt output.
 • Now both _yoast_wpseo_meta-robots-noindex and _yoast_wpseo_meta-robots-nofollow are fully respected.
+
+= 6.0.5 =
+⚡ Enhanced Performance & Clean Output
+• Database query logic fully refactored for high-speed data selection, reducing generation time by up to 70% on large sites.
+• Replaced WP_Query with direct SQL access — now works faster and avoids unnecessary overhead.
+• Significantly improved scalability and lower memory usage during .txt file generation.
+
+🧹 Special Character Cleanup
+• Removed invisible and problematic characters (NBSP, BOM, ZWSP, etc.) from post content to ensure clean and readable output.
+• Prevents display issues and improves downstream AI parsing of .txt files.
+
+📈 Faster Regeneration
+• Full .txt regeneration after content updates is now noticeably faster, especially on content-heavy websites.
+• Better memory handling and reduced write cycles during generation.

@@ -13,6 +13,7 @@ class LLMS_Generator
     private $llms_path;
     private $write_log;
     private $llms_name;
+    private $limit = 500;
 
     public function __construct()
     {
@@ -142,7 +143,7 @@ class LLMS_Generator
         $meta_description = $this->get_site_meta_description();
         $slug = 'ai-sitemap';
         $existing_page = get_page_by_path( $slug );
-        $output = "\xEF\xBB\xBF" . "# LLMs.txt - Sitemap for AI content discovery" . "\n\n";
+        $output = "\xEF\xBB\xBF";
         if(is_a($existing_page,'WP_Post')) {
             $output .= "# Learn more:" . get_permalink($existing_page) . "\n\n";
         }
@@ -160,258 +161,164 @@ class LLMS_Generator
 
     private function remove_shortcodes($content)
     {
-        return strip_tags(preg_replace('/\[[^\]]+\]/', '', $content));
+        $clean = preg_replace('/\[[^\]]+\]/', '', $content);
+
+        $clean = preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}-\x{202E}\x{2060}]/u', ' ', $clean);
+
+        $clean = html_entity_decode($clean, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        $clean = preg_replace('/[ \t]+/', ' ', $clean);
+        $clean = preg_replace('/\s{2,}/u', ' ', $clean);
+        $clean = preg_replace('/[\r\n]+/', "\n", $clean);
+
+        return trim(strip_tags($clean));
     }
 
     private function generate_overview()
     {
         global $wpdb;
 
-        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}aioseo_posts'" ) === "{$wpdb->prefix}aioseo_posts" ) {
-            add_filter('posts_where', [$this, 'exclude_noindex_nofollow_from_aioseo']);
-            add_filter('posts_join', [$this, 'join_aioseo_table']);
-        }
+        $use_yoast    = class_exists('WPSEO_Meta');
+        $use_rankmath = function_exists('rank_math');
+        $aioseo_enabled = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}aioseo_posts'") === "{$wpdb->prefix}aioseo_posts";
 
         foreach ($this->settings['post_types'] as $post_type) {
             if ($post_type === 'llms_txt') continue;
-            $output = '';
 
             $post_type_obj = get_post_type_object($post_type);
             if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
-                $output = "\n" . "## " . $post_type_obj->labels->name . "\n\n";
-                $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+                $this->write_file(mb_convert_encoding("\n## {$post_type_obj->labels->name}\n\n", 'UTF-8', 'auto'));
             }
 
-            unset($post_type_obj);
-
-            $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
-
-            $paged = 1;
+            $offset = 0;
             $i = 0;
+
             do {
-                $query = new WP_Query(array(
-                    'post_type' => $post_type,
-                    'posts_per_page' => $this->settings['max_posts'],
-                    'fields' => 'ids',
-                    'post_status' => 'publish',
-                    'orderby' => 'date',
-                    'order' => 'DESC',
-                    'paged' => $paged,
-                    'meta_query' => array(
-                        'relation' => 'AND',
-                        array(
-                            'relation' => 'OR',
-                            array(
-                                'key' => '_yoast_wpseo_meta-robots-noindex',
-                                'value' => '1',
-                                'compare' => '!='
-                            ),
-                            array(
-                                'key' => '_yoast_wpseo_meta-robots-noindex',
-                                'compare' => 'NOT EXISTS'
-                            ),
-                        ),
-                        array(
-                            'relation' => 'OR',
-                            array(
-                                'key' => 'rank_math_robots',
-                                'value' => 'noindex',
-                                'compare' => 'NOT LIKE'
-                            ),
-                            array(
-                                'key' => 'rank_math_robots',
-                                'compare' => 'NOT EXISTS'
-                            ),
-                        ),
-                    )
-                ));
+                $joins = '';
+                $conditions = "WHERE p.post_type = %s AND p.post_status = 'publish'";
+                $params = [$post_type];
 
-                if (!empty($query->posts)) {
-                    foreach ($query->posts as $post_id) {
-                        $post = get_post($post_id);
+                if ($use_yoast) {
+                    $joins .= " LEFT JOIN {$wpdb->postmeta} m1 ON p.ID = m1.post_id AND m1.meta_key = '_yoast_wpseo_meta-robots-noindex' ";
+                    $joins .= " LEFT JOIN {$wpdb->postmeta} m2 ON p.ID = m2.post_id AND m2.meta_key = '_yoast_wpseo_meta-robots-nofollow' ";
+                    $conditions .= " AND (m1.meta_value != '1' OR m1.post_id IS NULL) AND (m2.meta_value != '1' OR m2.post_id IS NULL)";
+                }
 
-                        if (!$this->is_post_indexed($post)) {
-                            continue;
+                if ($use_rankmath) {
+                    $joins .= " LEFT JOIN {$wpdb->postmeta} m3 ON p.ID = m3.post_id AND m3.meta_key = 'rank_math_robots' ";
+                    $conditions .= " AND (m3.meta_value NOT LIKE '%noindex%' OR m3.post_id IS NULL)";
+                }
+
+                if ($aioseo_enabled) {
+                    $joins .= " LEFT JOIN {$wpdb->prefix}aioseo_posts aioseo ON p.ID = aioseo.post_id ";
+                    $conditions .= " AND (aioseo.robots_noindex != 1 AND aioseo.robots_nofollow != 1 OR aioseo.post_id IS NULL)";
+                }
+
+                $params[] = $this->limit;
+                $params[] = $offset;
+                $post_ids = $wpdb->get_col($wpdb->prepare("SELECT p.ID FROM {$wpdb->posts} p $joins $conditions ORDER BY p.post_date DESC LIMIT %d OFFSET %d", ...$params));
+
+                if (!empty($post_ids)) {
+                    foreach ($post_ids as $post_id) {
+                        if (++$i % 50 === 0) wp_cache_flush();
+
+                        if($i > $this->settings['max_posts']) {
+                            break 2;
                         }
 
+                        $post = get_post($post_id);
                         $description = $this->get_post_meta_description($post);
                         if (!$description) {
-                            $fallback_content = $this->remove_shortcodes(get_the_excerpt($post_id) ?: get_the_content(null, false, $post));
+                            $fallback_content = $this->remove_shortcodes($post->post_excerpt ?: $post->post_content);
                             $fallback_content = $this->content_cleaner->clean($fallback_content);
                             $description = wp_trim_words(strip_tags($fallback_content), 20, '...');
                         }
 
-                        $output = sprintf("- [%s](%s): %s\n", $post->post_title, get_permalink($post_id), $description);
+                        $output = sprintf("- [%s](%s): %s\n", $post->post_title, get_permalink($post->ID), $description);
                         $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
 
-                        unset($description, $fallback_content, $output, $post);
-
-                        if (++$i % 50 === 0) {
-                            wp_cache_flush();
-                        }
+                        unset($description, $fallback_content, $output);
                     }
                 }
 
-                $paged++;
-            } while ($query->max_num_pages >= $paged);
+                $offset += $this->limit;
 
-            wp_reset_postdata();
-            unset($query);
+            } while (!empty($post_ids));
+
+            $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'auto'));
         }
-
-        remove_filter('posts_where', [$this, 'exclude_noindex_nofollow_from_aioseo']);
-        remove_filter('posts_join', [$this, 'join_aioseo_table']);
-
-        unset($output);
-        $this->write_file(mb_convert_encoding("---\n\n", 'UTF-8', 'auto'));
-    }
-
-    private function is_post_indexed($post)
-    {
-        // Check Rank Math
-        if (class_exists('RankMath')) {
-            $robots = get_post_meta($post->ID, 'rank_math_robots', true);
-            if (is_array($robots) && in_array('noindex', $robots)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private function get_post_seo_title($post)
-    {
-        if (class_exists('WPSEO_Meta')) {
-            $seo_title = WPSEO_Meta::get_value('title', $post->ID);
-            if (!empty($seo_title)) {
-                // Remove common Yoast variables and clean up
-                $seo_title = str_replace(array(
-                    '%%sep%%',
-                    '%%sitename%%',
-                    ' - ' . get_bloginfo('name'),
-                    ' | ' . get_bloginfo('name'),
-                    ' » ' . get_bloginfo('name')
-                ), '', $seo_title);
-                return trim(wpseo_replace_vars($seo_title, $post));
-            }
-        } elseif (class_exists('RankMath\Post\Post')) {
-            $seo_title = RankMath\Post\Post::get_meta('title', $post->ID);
-            if (!empty($seo_title)) {
-                // Remove common RankMath variables and clean up
-                $seo_title = str_replace(array(
-                    '%sep%',
-                    '%sitename%',
-                    ' - ' . get_bloginfo('name'),
-                    ' | ' . get_bloginfo('name'),
-                    ' » ' . get_bloginfo('name')
-                ), '', $seo_title);
-                return trim(RankMath\Helper::replace_vars($seo_title, $post));
-            }
-        }
-        return false;
-    }
-
-    public function join_aioseo_table( $join ) {
-        global $wpdb;
-        return $join . " LEFT JOIN {$wpdb->prefix}aioseo_posts AS aioseo ON {$wpdb->posts}.ID = aioseo.post_id ";
-    }
-
-    public function exclude_noindex_nofollow_from_aioseo( $where ) {
-        return $where . " AND (aioseo.robots_noindex != 1 AND aioseo.robots_nofollow != 1 OR aioseo.post_id IS NULL)";
     }
 
     private function generate_detailed_content()
     {
+        global $wpdb;
+
         $output = "#\n" . "# Detailed Content\n\n";
         $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
 
-        global $wpdb;
-
-        if ( $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}aioseo_posts'" ) === "{$wpdb->prefix}aioseo_posts" ) {
-            add_filter('posts_where', [$this, 'exclude_noindex_nofollow_from_aioseo']);
-            add_filter('posts_join', [$this, 'join_aioseo_table']);
-        }
+        $aioseo_enabled = $wpdb->get_var("SHOW TABLES LIKE '{$wpdb->prefix}aioseo_posts'") === "{$wpdb->prefix}aioseo_posts";
+        $use_yoast = class_exists('WPSEO_Meta');
+        $use_rankmath = function_exists('rank_math');
 
         foreach ($this->settings['post_types'] as $post_type) {
             if ($post_type === 'llms_txt') continue;
 
-            $output = '';
             $post_type_obj = get_post_type_object($post_type);
             if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
-                $output = "\n" . "## " . $post_type_obj->labels->name . "\n\n";
+                $output = "\n## " . $post_type_obj->labels->name . "\n\n";
+                $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
             }
-            $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
-            unset($post_type_obj, $output);
 
-            $paged = 1;
+            $offset = 0;
+            $i = 0;
+
             do {
-                $query = new WP_Query(array(
-                    'post_type' => $post_type,
-                    'posts_per_page' => $this->settings['max_posts'],
-                    'post_status' => 'publish',
-                    'orderby' => 'date',
-                    'order' => 'DESC',
-                    'paged' => $paged,
-                    'fields' => 'ids',
-                    'meta_query' => array(
-                        'relation' => 'AND',
-                        array(
-                            'relation' => 'OR',
-                            array(
-                                'key' => '_yoast_wpseo_meta-robots-noindex',
-                                'value' => '1',
-                                'compare' => '!='
-                            ),
-                            array(
-                                'key' => '_yoast_wpseo_meta-robots-noindex',
-                                'compare' => 'NOT EXISTS'
-                            ),
-                        ),
-                        array(
-                            'relation' => 'OR',
-                            array(
-                                'key' => 'rank_math_robots',
-                                'value' => 'noindex',
-                                'compare' => 'NOT LIKE'
-                            ),
-                            array(
-                                'key' => 'rank_math_robots',
-                                'compare' => 'NOT EXISTS'
-                            ),
-                        ),
-                    )
-                ));
+                $joins = '';
+                $conditions = "WHERE p.post_type = %s AND p.post_status = 'publish'";
+                $params = [$post_type, $this->limit, $offset];
 
-                if (!empty($query->posts)) {
-                    $i = 0;
-                    foreach ($query->posts as $post_id) {
-                        $post = get_post($post_id);
+                if ($use_yoast) {
+                    $joins .= " LEFT JOIN {$wpdb->postmeta} m1 ON p.ID = m1.post_id AND m1.meta_key = '_yoast_wpseo_meta-robots-noindex' ";
+                    $joins .= " LEFT JOIN {$wpdb->postmeta} m2 ON p.ID = m2.post_id AND m2.meta_key = '_yoast_wpseo_meta-robots-nofollow' ";
+                    $conditions .= " AND (m1.meta_value != '1' OR m1.post_id IS NULL) AND (m2.meta_value != '1' OR m2.post_id IS NULL)";
+                }
 
-                        if (!$this->is_post_indexed($post)) {
-                            unset($post);
-                            continue;
+                if ($use_rankmath) {
+                    $joins .= " LEFT JOIN {$wpdb->postmeta} m3 ON p.ID = m3.post_id AND m3.meta_key = 'rank_math_robots' ";
+                    $conditions .= " AND (m3.meta_value NOT LIKE '%noindex%' OR m3.post_id IS NULL)";
+                }
+
+                if ($aioseo_enabled) {
+                    $joins .= " LEFT JOIN {$wpdb->prefix}aioseo_posts aioseo ON p.ID = aioseo.post_id ";
+                    $conditions .= " AND (aioseo.robots_noindex != 1 AND aioseo.robots_nofollow != 1 OR aioseo.post_id IS NULL)";
+                }
+
+                $post_ids = $wpdb->get_col($wpdb->prepare("SELECT p.ID FROM {$wpdb->posts} p $joins $conditions ORDER BY p.post_date DESC LIMIT %d OFFSET %d", ...$params));
+
+                if (!empty($post_ids)) {
+                    foreach ($post_ids as $post_id) {
+                        if (++$i % 50 === 0) {
+                            wp_cache_flush();
                         }
 
+                        if($i > $this->settings['max_posts']) {
+                            break 2;
+                        }
+
+                        $post = get_post($post_id);
                         $content = $this->format_post_content($post);
                         $this->write_file(mb_convert_encoding($content, 'UTF-8', 'auto'));
 
                         unset($post, $content);
-
-                        if (++$i % 50 === 0) {
-                            wp_cache_flush();
-                        }
                     }
                 }
 
-                $paged++;
-            } while ($query->max_num_pages >= $paged);
+                $offset += $this->limit;
 
-            wp_reset_postdata();
-            unset($query);
+            } while (!empty($post_ids));
+
+            $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'auto'));
         }
-
-        remove_filter('posts_where', [$this, 'exclude_noindex_nofollow_from_aioseo']);
-        remove_filter('posts_join', [$this, 'join_aioseo_table']);
     }
 
     private function format_post_content($post)
@@ -543,6 +450,9 @@ class LLMS_Generator
         }
 
         $upload_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
+        if (file_exists($upload_path)) {
+            unlink($upload_path);
+        }
         $this->generate_content();
         if(defined('FLYWHEEL_PLUGIN_DIR')) {
             $file_path = dirname(ABSPATH) . 'www/' . 'llms.txt';

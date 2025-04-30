@@ -124,7 +124,7 @@ if (isset($_GET['settings-updated']) &&
                            name="llms_generator_settings[max_posts]" 
                            value="<?php echo esc_attr($settings['max_posts']); ?>"
                            min="1"
-                           max="1000">
+                           max="100000">
                 </label>
             </p>
 
@@ -135,7 +135,7 @@ if (isset($_GET['settings-updated']) &&
                            name="llms_generator_settings[max_words]"
                            value="<?php echo esc_attr($settings['max_words'] ?? 250); ?>"
                            min="1"
-                           max="10000">
+                           max="100000">
                 </label>
             </p>
             
