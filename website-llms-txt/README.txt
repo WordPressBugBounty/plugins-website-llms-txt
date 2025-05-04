@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 6.0.5
+Stable tag: 6.0.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,16 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 6.0.6 =
+
+✅ Persistent Dismiss for Admin Notices
+• Admin notices now store dismissal state using user meta — ensuring they remain hidden once closed.
+• No more repeated reminders across dashboard pages — smoother and less intrusive user experience.
+
+🛠 Minor Code Cleanup
+• Removed outdated notice render logic.
+• Improved JS handling for notice dismissals across multi-user environments.
 
 = 6.0.5 =
 ⚡ Enhanced Performance & Clean Output
@@ -664,3 +674,13 @@ example.com/llms.txt/ and example.com/ai.txt/.
 📈 Faster Regeneration
 • Full .txt regeneration after content updates is now noticeably faster, especially on content-heavy websites.
 • Better memory handling and reduced write cycles during generation.
+
+= 6.0.6 =
+
+✅ Persistent Dismiss for Admin Notices
+• Admin notices now store dismissal state using user meta — ensuring they remain hidden once closed.
+• No more repeated reminders across dashboard pages — smoother and less intrusive user experience.
+
+🛠 Minor Code Cleanup
+• Removed outdated notice render logic.
+• Improved JS handling for notice dismissals across multi-user environments.
