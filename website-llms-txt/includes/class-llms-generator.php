@@ -456,28 +456,19 @@ class LLMS_Generator
         $this->generate_content();
         if(defined('FLYWHEEL_PLUGIN_DIR')) {
             $file_path = dirname(ABSPATH) . 'www/' . 'llms.txt';
-            $file_ai_path = dirname(ABSPATH) . 'www/' . 'ai.txt';
             if (file_exists($file_path)) {
                 unlink($file_path);
-            }
-            if (file_exists($file_ai_path)) {
-                unlink($file_ai_path);
             }
         } else {
             $file_path = ABSPATH . 'llms.txt';
-            $file_ai_path = ABSPATH . 'ai.txt';
             if (file_exists($file_path)) {
                 unlink($file_path);
-            }
-            if (file_exists($file_ai_path)) {
-                unlink($file_ai_path);
             }
         }
 
         if ( ! is_multisite() ) {
             if (file_exists($upload_path)) {
                 $this->wp_filesystem->copy($upload_path, $file_path, true);
-                $this->wp_filesystem->copy($upload_path, $file_ai_path, true);
             }
         }
 

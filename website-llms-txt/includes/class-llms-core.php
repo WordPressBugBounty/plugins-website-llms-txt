@@ -250,11 +250,6 @@ class LLMS_Core {
             unlink($upload_path);
         }
 
-        $upload_path = $upload_dir['basedir'] . '/ai.txt';
-        if (file_exists($upload_path)) {
-            unlink($upload_path);
-        }
-
         wp_clear_scheduled_hook('llms_update_llms_file_cron');
         wp_schedule_single_event(time() + 2, 'llms_update_llms_file_cron');
 
@@ -272,7 +267,6 @@ class LLMS_Core {
 
         if($wp_rewrite) {
             $wp_rewrite->add_rule('llms.txt', 'index.php?llms_txt=1', 'top');
-            $wp_rewrite->add_rule('ai.txt', 'index.php?llms_txt=1', 'top');
         }
     }
 
