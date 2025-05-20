@@ -163,6 +163,8 @@ class LLMS_Generator
     {
         $clean = preg_replace('/\[[^\]]+\]/', '', $content);
 
+        $clean = preg_replace('/<style\b[^>]*>.*?<\/style>/is', '', $clean);
+
         $clean = preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}-\x{202E}\x{2060}]/u', ' ', $clean);
 
         $clean = html_entity_decode($clean, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -321,6 +323,20 @@ class LLMS_Generator
         }
     }
 
+    public function remove_emojis($text) {
+        return preg_replace('/[\x{1F600}-\x{1F64F}'
+            . '\x{1F300}-\x{1F5FF}'
+            . '\x{1F680}-\x{1F6FF}'
+            . '\x{1F1E0}-\x{1F1FF}'
+            . '\x{2600}-\x{26FF}'
+            . '\x{2700}-\x{27BF}'
+            . '\x{FE00}-\x{FE0F}'
+            . '\x{1F900}-\x{1F9FF}'
+            . '\x{1F018}-\x{1F270}'
+            . '\x{238C}-\x{2454}'
+            . '\x{20D0}-\x{20FF}]/u', '', $text);
+    }
+
     private function format_post_content($post)
     {
         $output = "### " . $post->post_title . "\n\n";
@@ -367,7 +383,7 @@ class LLMS_Generator
         }
 
         // Clean and add the content
-        $content = wp_trim_words($this->content_cleaner->clean($this->remove_shortcodes($post->post_content)), $this->settings['max_words'] ?? 250, '...');
+        $content = wp_trim_words($this->content_cleaner->clean($this->remove_emojis( $this->remove_shortcodes($post->post_content))), $this->settings['max_words'] ?? 250, '...');
         $output .= $content . "\n\n";
         $output .= "---\n\n";
 

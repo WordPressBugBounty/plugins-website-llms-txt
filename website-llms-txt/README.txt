@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 6.0.7
+Stable tag: 6.0.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,13 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 6.0.8 =
+
+✅ Fixed: Emoji and Code Cleanup in llms.txt
+• Emojis and unnecessary symbols are now automatically removed from `llms.txt`.
+• Code snippets are correctly sanitized for plain-text output.
+• Improved table formatting: table data is now correctly aligned and rendered when exported.
 
 = 6.0.7 =
 
@@ -698,3 +705,10 @@ example.com/llms.txt/ and example.com/ai.txt/.
 • The automatic creation of the ai.txt file has been removed.
 • This change reduces unnecessary file writes and simplifies plugin behavior.
 • If needed, you can still manually create and manage ai.txt in your site’s root.
+
+= 6.0.8 =
+
+✅ Fixed: Emoji and Code Cleanup in llms.txt
+• Emojis and unnecessary symbols are now automatically removed from `llms.txt`.
+• Code snippets are correctly sanitized for plain-text output.
+• Improved table formatting: table data is now correctly aligned and rendered when exported.
