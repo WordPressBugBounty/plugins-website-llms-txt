@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 6.0.8
+Stable tag: 6.0.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,13 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 6.0.9 =
+
+✅ Fixed: Yoast SEO Variable Parsing
+• Resolved issue where dynamic SEO content using Yoast variables (e.g., %%title%%, %%excerpt%%) wasn’t correctly replaced during content generation.
+• Content processed through wpseo_replace_vars() to ensure accurate output.
+• Improved compatibility with Yoast SEO templates, even when used outside the standard loop or template hierarchy.
 
 = 6.0.8 =
 
@@ -712,3 +719,10 @@ example.com/llms.txt/ and example.com/ai.txt/.
 • Emojis and unnecessary symbols are now automatically removed from `llms.txt`.
 • Code snippets are correctly sanitized for plain-text output.
 • Improved table formatting: table data is now correctly aligned and rendered when exported.
+
+= 6.0.9 =
+
+✅ Fixed: Yoast SEO Variable Parsing
+• Resolved issue where dynamic SEO content using Yoast variables (e.g., %%title%%, %%excerpt%%) wasn’t correctly replaced during content generation.
+• Content processed through wpseo_replace_vars() to ensure accurate output.
+• Improved compatibility with Yoast SEO templates, even when used outside the standard loop or template hierarchy.

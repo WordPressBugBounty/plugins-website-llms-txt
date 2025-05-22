@@ -231,7 +231,7 @@ class LLMS_Generator
                         $post = get_post($post_id);
                         $description = $this->get_post_meta_description($post);
                         if (!$description) {
-                            $fallback_content = $this->remove_shortcodes($post->post_excerpt ?: $post->post_content);
+                            $fallback_content = $this->remove_shortcodes(apply_filters( 'get_the_excerpt', $post->post_excerpt, $post ) ?: get_the_content(null, false, $post));
                             $fallback_content = $this->content_cleaner->clean($fallback_content);
                             $description = wp_trim_words(strip_tags($fallback_content), 20, '...');
                         }
@@ -383,7 +383,7 @@ class LLMS_Generator
         }
 
         // Clean and add the content
-        $content = wp_trim_words($this->content_cleaner->clean($this->remove_emojis( $this->remove_shortcodes($post->post_content))), $this->settings['max_words'] ?? 250, '...');
+        $content = wp_trim_words($this->content_cleaner->clean($this->remove_emojis( $this->remove_shortcodes(get_the_content(null, false, $post)))), $this->settings['max_words'] ?? 250, '...');
         $output .= $content . "\n\n";
         $output .= "---\n\n";
 
@@ -403,7 +403,7 @@ class LLMS_Generator
     private function get_post_meta_description($post)
     {
         if (class_exists('WPSEO_Meta')) {
-            return WPSEO_Meta::get_value('metadesc', $post->ID);
+            return YoastSEO()->meta->for_post($post->ID)->description;
         } elseif (class_exists('RankMath')) {
             // Try using RankMath's helper class first
             if (class_exists('RankMath\Helper')) {
