@@ -151,7 +151,23 @@ class LLMS_Generator
         if ($meta_description) {
             $output .= "> " . $meta_description . "\n\n";
         } else {
-            $output .= "> " . get_bloginfo('description') . "\n\n";
+            $description = get_bloginfo('description');
+            if($description) {
+                $output .= "> " . $description . "\n\n";
+            } else {
+                $front_page_id = get_option('page_on_front');
+                $description = '';
+                if ($front_page_id) {
+                    $description = get_the_excerpt($front_page_id);
+                    if (empty($description)) {
+                        $description = get_post_field('post_content', $front_page_id);
+                    }
+                }
+
+                if($description) {
+                    $output .= "> " . wp_trim_words(strip_tags(preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}-\x{202E}\x{2060}]/u', ' ', html_entity_decode($description))), 30, '') . "\n\n";
+                }
+            }
         }
         $output .= "---\n\n";
         $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
@@ -236,7 +252,7 @@ class LLMS_Generator
                             $description = wp_trim_words(strip_tags($fallback_content), 20, '...');
                         }
 
-                        $output = sprintf("- [%s](%s): %s\n", $post->post_title, get_permalink($post->ID), $description);
+                        $output = sprintf("- [%s](%s): %s\n", $post->post_title, get_permalink($post->ID), $clean_description = preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $description));
                         $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
 
                         unset($description, $fallback_content, $output);
@@ -344,7 +360,8 @@ class LLMS_Generator
         if ($this->settings['include_meta']) {
             $meta_description = $this->get_post_meta_description($post);
             if ($meta_description) {
-                $output .= "> " . wp_trim_words($meta_description, $this->settings['max_words'] ?? 250, '...') . "\n\n";
+                $clean_description = preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $meta_description);
+                $output .= "> " . wp_trim_words($clean_description, $this->settings['max_words'] ?? 250, '...') . "\n\n";
             }
 
             $output .= "- Published: " . get_the_date('Y-m-d', $post) . "\n";
@@ -393,7 +410,7 @@ class LLMS_Generator
     private function get_site_meta_description()
     {
         if (class_exists('WPSEO_Options')) {
-            return WPSEO_Options::get('metadesc');
+            return YoastSEO()->meta->for_posts_page()->description;
         } elseif (class_exists('RankMath')) {
             return get_option('rank_math_description');
         }
