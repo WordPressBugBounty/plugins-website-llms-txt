@@ -238,8 +238,6 @@ class LLMS_Generator
 
                 if (!empty($post_ids)) {
                     foreach ($post_ids as $post_id) {
-                        if (++$i % 50 === 0) wp_cache_flush();
-
                         if($i > $this->settings['max_posts']) {
                             break 2;
                         }
@@ -315,10 +313,6 @@ class LLMS_Generator
 
                 if (!empty($post_ids)) {
                     foreach ($post_ids as $post_id) {
-                        if (++$i % 50 === 0) {
-                            wp_cache_flush();
-                        }
-
                         if($i > $this->settings['max_posts']) {
                             break 2;
                         }

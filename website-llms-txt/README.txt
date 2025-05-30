@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 6.1.0
+Stable tag: 6.1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -63,14 +63,15 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 
 == Changelog ==
 
+
+= 6.1.1 =
+
+🧹 Removed: Global Cache Flush
+• Eliminated `wp_cache_flush()` calls from content processing loop.
+• Prevented unintended flushing of global object cache affecting other plugins.
+• Reading operations no longer interfere with cache integrity.
+
 = 6.1.0 =
-
-✅ Improved: Fallback Description Handling & Text Cleanup
-• Fixed display issues caused by invisible &nbsp; characters — these are now properly removed from the output.
-• If no SEO plugin is active, the meta description is now automatically pulled from the front page content or excerpt as a fallback.
-• Ensures cleaner, more reliable plain-text output for non-SEO-configured sites.
-
-= 6.0.9 =
 
 ✅ Fixed: Yoast SEO Variable Parsing
 • Resolved issue where dynamic SEO content using Yoast variables (e.g., %%title%%, %%excerpt%%) wasn’t correctly replaced during content generation.
@@ -740,3 +741,10 @@ example.com/llms.txt/ and example.com/ai.txt/.
 • Fixed display issues caused by invisible &nbsp; characters — these are now properly removed from the output.
 • If no SEO plugin is active, the meta description is now automatically pulled from the front page content or excerpt as a fallback.
 • Ensures cleaner, more reliable plain-text output for non-SEO-configured sites.
+
+= 6.1.1 =
+
+🧹 Removed: Global Cache Flush
+• Eliminated `wp_cache_flush()` calls from content processing loop.
+• Prevented unintended flushing of global object cache affecting other plugins.
+• Reading operations no longer interfere with cache integrity.
