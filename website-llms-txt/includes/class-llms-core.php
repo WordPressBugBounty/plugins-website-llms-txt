@@ -225,7 +225,7 @@ class LLMS_Core {
     }
 
     public function add_settings_link($links) {
-        $settings_link = '<a href="admin.php?page=llms-file-manager">Settings</a>';
+        $settings_link = '<a href="admin.php?page=llms-file-manager">' . __('Settings', 'website-llms-txt') . '</a>';
         array_unshift($links, $settings_link);
         return $links;
     }

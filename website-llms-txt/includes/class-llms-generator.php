@@ -150,24 +150,6 @@ class LLMS_Generator
         $output .= "# " . get_bloginfo('name') . "\n\n";
         if ($meta_description) {
             $output .= "> " . $meta_description . "\n\n";
-        } else {
-            $description = get_bloginfo('description');
-            if($description) {
-                $output .= "> " . $description . "\n\n";
-            } else {
-                $front_page_id = get_option('page_on_front');
-                $description = '';
-                if ($front_page_id) {
-                    $description = get_the_excerpt($front_page_id);
-                    if (empty($description)) {
-                        $description = get_post_field('post_content', $front_page_id);
-                    }
-                }
-
-                if($description) {
-                    $output .= "> " . wp_trim_words(strip_tags(preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}-\x{202E}\x{2060}]/u', ' ', html_entity_decode($description))), 30, '') . "\n\n";
-                }
-            }
         }
         $output .= "---\n\n";
         $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
@@ -250,8 +232,11 @@ class LLMS_Generator
                             $description = wp_trim_words(strip_tags($fallback_content), 20, '...');
                         }
 
-                        $output = sprintf("- [%s](%s): %s\n", $post->post_title, get_permalink($post->ID), $clean_description = preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $description));
-                        $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+                        $output = sprintf("- [%s](%s): %s\n", $post->post_title, get_permalink($post->ID), preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $description));
+                        if($description) {
+                            $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+                        }
+
 
                         unset($description, $fallback_content, $output);
                     }
@@ -319,7 +304,9 @@ class LLMS_Generator
 
                         $post = get_post($post_id);
                         $content = $this->format_post_content($post);
-                        $this->write_file(mb_convert_encoding($content, 'UTF-8', 'auto'));
+                        if($content) {
+                            $this->write_file(mb_convert_encoding($content, 'UTF-8', 'auto'));
+                        }
 
                         unset($post, $content);
                     }
@@ -395,6 +382,9 @@ class LLMS_Generator
 
         // Clean and add the content
         $content = wp_trim_words($this->content_cleaner->clean($this->remove_emojis( $this->remove_shortcodes(get_the_content(null, false, $post)))), $this->settings['max_words'] ?? 250, '...');
+        if(!$content) {
+            return '';
+        }
         $output .= $content . "\n\n";
         $output .= "---\n\n";
 
@@ -407,8 +397,24 @@ class LLMS_Generator
             return YoastSEO()->meta->for_posts_page()->description;
         } elseif (class_exists('RankMath')) {
             return get_option('rank_math_description');
+        } else {
+            $description = get_bloginfo('description');
+            if ($description) {
+                return get_bloginfo('description');
+            } else {
+                $front_page_id = get_option('page_on_front');
+                $description = '';
+                if ($front_page_id) {
+                    $description = get_the_excerpt($front_page_id);
+                    if (empty($description)) {
+                        $description = get_post_field('post_content', $front_page_id);
+                    }
+                }
+
+                $description = $this->remove_shortcodes(str_replace(']]>', ']]&gt;', apply_filters('the_content', $description)));
+                return wp_trim_words(strip_tags(preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}-\x{202E}\x{2060}]/u', ' ', html_entity_decode($description))), 30, '');
+            }
         }
-        return false;
     }
 
     private function get_post_meta_description($post)
