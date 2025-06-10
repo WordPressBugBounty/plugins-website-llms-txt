@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 6.1.2
+Stable tag: 7.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,17 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 7.0.0 =
+
+🚀 Major Overhaul: LLMS.txt Generation & Performance
+
+• Rebuilt the LLMS.txt generation system from the ground up.
+• Introduced a dedicated `llms_txt_cache` database table to index and store structured data efficiently.
+• Greatly reduced server load by avoiding direct filesystem writes and enabling smarter caching.
+• File generation is now handled **asynchronously via scheduled cron jobs** to avoid UI slowdowns and improve scalability.
+• Minimized the number of filesystem write operations during LLMS.txt generation, improving reliability and performance.
+• Optimized for large-scale databases — smoother performance on sites with thousands of posts.
 
 = 6.1.2 =
 
@@ -765,3 +776,14 @@ example.com/llms.txt/ and example.com/ai.txt/.
 • Fixed incorrect tagline display by properly falling back to site description settings.
 
 These updates improve localization accuracy, content visibility logic, and metadata consistency.
+
+= 7.0.0 =
+
+🚀 Major Overhaul: LLMS.txt Generation & Performance
+
+• Rebuilt the LLMS.txt generation system from the ground up.
+• Introduced a dedicated `llms_txt_cache` database table to index and store structured data efficiently.
+• Greatly reduced server load by avoiding direct filesystem writes and enabling smarter caching.
+• File generation is now handled **asynchronously via scheduled cron jobs** to avoid UI slowdowns and improve scalability.
+• Minimized the number of filesystem write operations during LLMS.txt generation, improving reliability and performance.
+• Optimized for large-scale databases — smoother performance on sites with thousands of posts.
