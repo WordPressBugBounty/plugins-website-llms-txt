@@ -251,6 +251,10 @@ class LLMS_Core {
             unlink($upload_path);
         }
 
+        global $wpdb;
+        $table = $wpdb->prefix . 'llms_txt_cache';
+        $wpdb->query( "TRUNCATE TABLE {$table}" );
+
         wp_clear_scheduled_hook('llms_update_llms_file_cron');
         wp_schedule_single_event(time() + 2, 'llms_update_llms_file_cron');
 

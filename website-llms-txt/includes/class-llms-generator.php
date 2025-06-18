@@ -349,6 +349,7 @@ class LLMS_Generator
             $offset = 0;
             $exit = false;
             $i = 0;
+            $output = '';
 
             do {
                 $conditions = " WHERE `type` = %s AND `show`=1 AND `status`='publish' ";
@@ -360,7 +361,6 @@ class LLMS_Generator
 
                 $posts = $wpdb->get_results($wpdb->prepare("SELECT * FROM $table_cache $conditions ORDER BY `published` DESC LIMIT %d OFFSET %d", ...$params));
                 if (!empty($posts)) {
-                    $output = '';
                     foreach ($posts as $data) {
                         if (!$data->content) continue;
                         if ($i > $this->settings['max_posts']) {
@@ -555,7 +555,7 @@ class LLMS_Generator
 
         if ($use_rankmath) {
             $robots_noindex = get_post_meta($post_id, 'rank_math_robots', true);
-            if($robots_noindex) {
+            if(is_array($robots_noindex) && (in_array('nofollow', $robots_noindex) || in_array('noindex', $robots_noindex))) {
                 $show = 0;
             }
         }

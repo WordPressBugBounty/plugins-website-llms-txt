@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 7.0.1
+Stable tag: 7.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,13 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 7.0.2 =
+
+🛠️ Bug Fixes & Improvements
+
+• Fixed an issue with detecting `nofollow` and `noindex` pages when using the Rank Math SEO plugin.
+• The "Clear Caches" button in the Cache Management block now also clears the LLMS index table to ensure full site reindexing.
 
 = 7.0.1 =
 
@@ -803,3 +810,10 @@ These updates improve localization accuracy, content visibility logic, and metad
 • Resolved a critical issue that caused "Update failed. The response is not a valid JSON response." when editing or publishing posts.
 • The plugin now correctly avoids interfering with the WordPress REST API response during post save/update actions.
 • Confirmed compatibility with block editor and custom post types — post creation and updates now work reliably.
+
+= 7.0.2 =
+
+🛠️ Bug Fixes & Improvements
+
+• Fixed an issue with detecting `nofollow` and `noindex` pages when using the Rank Math SEO plugin.
+• The "Clear Caches" button in the Cache Management block now also clears the LLMS index table to ensure full site reindexing.

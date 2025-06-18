@@ -196,6 +196,8 @@ if (isset($_GET['settings-updated']) &&
             <li><?php esc_html_e('Clearing sitemap caches', 'website-llms-txt'); ?></li>
             <li><?php esc_html_e('Resetting WordPress rewrite rules', 'website-llms-txt'); ?></li>
             <li><?php esc_html_e('Forcing sitemap regeneration', 'website-llms-txt'); ?></li>
+            <li><?php esc_html_e('Triggering full site reindexing', 'website-llms-txt'); ?></li>
+            <li><?php esc_html_e('Generating LLMS.txt file', 'website-llms-txt'); ?></li>
         </ul>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
             <input type="hidden" name="action" value="clear_caches">
