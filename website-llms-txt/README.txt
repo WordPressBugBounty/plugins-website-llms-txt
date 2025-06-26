@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 7.0.2
+Stable tag: 7.0.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -62,6 +62,14 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 7.0.3 =
+
+🛠️ Bug Fixes & Improvements
+
+• Added support for excluding llms.txt from sitemaps by default to prevent unintended indexing by search engines.
+• Introduced an optional checkbox in settings to allow manual inclusion of llms.txt in the sitemap, with a clear SEO warning.
+• On plugin deactivation, scheduled tasks related to llms.txt are now properly cleared and the file is removed from the site root to avoid stale exposure.
 
 = 7.0.2 =
 
@@ -817,3 +825,11 @@ These updates improve localization accuracy, content visibility logic, and metad
 
 • Fixed an issue with detecting `nofollow` and `noindex` pages when using the Rank Math SEO plugin.
 • The "Clear Caches" button in the Cache Management block now also clears the LLMS index table to ensure full site reindexing.
+
+= 7.0.3 =
+
+🛠️ Bug Fixes & Improvements
+
+• Added support for excluding llms.txt from sitemaps by default to prevent unintended indexing by search engines.
+• Introduced an optional checkbox in settings to allow manual inclusion of llms.txt in the sitemap, with a clear SEO warning.
+• On plugin deactivation, scheduled tasks related to llms.txt are now properly cleared and the file is removed from the site root to avoid stale exposure.

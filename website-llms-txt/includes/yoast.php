@@ -37,30 +37,32 @@ class LLMS_Yoast_Integration {
 	}
 
     public function generate_sitemap() {
-        $latest_post = get_posts([
-            'post_type' => 'llms_txt',
-            'posts_per_page' => 1,
-            'post_status' => 'publish'
-        ]);
+        $settings = apply_filters('get_llms_generator_settings', []);
+        if($settings['llms_allow_indexing']) {
+            $latest_post = get_posts([
+                'post_type' => 'llms_txt',
+                'posts_per_page' => 1,
+                'post_status' => 'publish'
+            ]);
 
-        if (empty($latest_post)) {
-            return '';
-        }
+            if (empty($latest_post)) {
+                return '';
+            }
 
-        $url = array(
-            'loc' => home_url('/llms.txt'),
-            'lastmod' => get_post_modified_time('c', true, $latest_post[0]),
-            'changefreq' => 'weekly',
-            'priority' => '0.8'
-        );
+            $url = array(
+                'loc' => home_url('/llms.txt'),
+                'lastmod' => get_post_modified_time('c', true, $latest_post[0]),
+                'changefreq' => 'weekly',
+                'priority' => '0.8'
+            );
 
-        $xsl_url = esc_url(home_url('main-sitemap.xsl'));
-        $loc = esc_url($url['loc']);
-        $lastmod = esc_xml($url['lastmod']);
-        $changefreq = esc_xml($url['changefreq']);
-        $priority = esc_xml($url['priority']);
+            $xsl_url = esc_url(home_url('main-sitemap.xsl'));
+            $loc = esc_url($url['loc']);
+            $lastmod = esc_xml($url['lastmod']);
+            $changefreq = esc_xml($url['changefreq']);
+            $priority = esc_xml($url['priority']);
 
-        return <<<SEO
+            return <<<SEO
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="{$xsl_url}"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
@@ -72,21 +74,25 @@ class LLMS_Yoast_Integration {
     </url>
 </urlset>
 SEO;
+        }
     }
 
     public function add_to_index($sitemap) {
-        $latest_post = get_posts([
-            'post_type' => 'llms_txt',
-            'posts_per_page' => 1,
-            'post_status' => 'publish'
-        ]);
+        $settings = apply_filters('get_llms_generator_settings', []);
+        if($settings['llms_allow_indexing']) {
+            $latest_post = get_posts([
+                'post_type' => 'llms_txt',
+                'posts_per_page' => 1,
+                'post_status' => 'publish'
+            ]);
 
-        if (!empty($latest_post)) {
-            $entry = "\n<sitemap>";
-            $entry .= "\n\t<loc>" . esc_url(home_url('llms-sitemap.xml')) . "</loc>";
-            $entry .= "\n\t<lastmod>" . esc_xml(get_post_modified_time('c', true, $latest_post[0])) . "</lastmod>";
-            $entry .= "\n</sitemap>\n";
-            return $sitemap . $entry;
+            if (!empty($latest_post)) {
+                $entry = "\n<sitemap>";
+                $entry .= "\n\t<loc>" . esc_url(home_url('llms-sitemap.xml')) . "</loc>";
+                $entry .= "\n\t<lastmod>" . esc_xml(get_post_modified_time('c', true, $latest_post[0])) . "</lastmod>";
+                $entry .= "\n</sitemap>\n";
+                return $sitemap . $entry;
+            }
         }
 
         return $sitemap;

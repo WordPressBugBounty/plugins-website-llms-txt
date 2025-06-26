@@ -26,6 +26,7 @@ class LLMS_Generator
             'include_taxonomies' => true,
             'update_frequency' => 'immediate',
             'need_check_option' => true,
+            'llms_allow_indexing' => false,
         ));
 
         // Initialize content cleaner
@@ -48,6 +49,12 @@ class LLMS_Generator
         add_action('llms_update_llms_file_cron', array($this, 'update_llms_file'));
         add_action('init', array($this, 'llms_create_txt_cache_table_if_not_exists'), 999);
         add_action('updates_all_posts', array($this, 'updates_all_posts'), 999);
+        add_filter('get_llms_generator_settings', array($this, 'get_llms_generator_settings'));
+    }
+
+    public function get_llms_generator_settings( $settings = [] )
+    {
+        return $this->settings;
     }
 
     public function llms_create_txt_cache_table_if_not_exists()

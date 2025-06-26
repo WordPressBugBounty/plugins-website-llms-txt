@@ -138,6 +138,7 @@ class LLMS_Core {
                     'include_taxonomies' => true,
                     'update_frequency' => 'immediate',
                     'need_check_option' => true,
+                    'llms_allow_indexing' => false,
                 )
             )
         );
@@ -169,6 +170,7 @@ class LLMS_Core {
             min(max(absint($value['max_words']), 1), 100000) : 250;
         
         // Sanitize boolean values
+        $clean['llms_allow_indexing'] = !empty($value['llms_allow_indexing']);
         $clean['include_meta'] = !empty($value['include_meta']);
         $clean['include_excerpts'] = !empty($value['include_excerpts']);
         $clean['include_taxonomies'] = !empty($value['include_taxonomies']);

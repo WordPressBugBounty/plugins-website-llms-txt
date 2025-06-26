@@ -118,6 +118,18 @@ if (isset($_GET['settings-updated']) &&
             <h3><?php esc_html_e('Content Options', 'website-llms-txt'); ?></h3>
             <p>
                 <label>
+                    <strong>⚠️ Warning:</strong> Including <code>llms.txt</code> in your sitemap may lead to it being crawled and indexed by search engines like Google. If your file contains full post content, this could trigger duplicate content issues or filtering in search results. Use only if you understand the SEO impact.<br/><br/>
+                    <input
+                        type="checkbox"
+                        name="llms_generator_settings[llms_allow_indexing]"
+                        value="1"
+                        <?php checked(!empty($settings['llms_allow_indexing'])); ?>
+                    />
+                    <strong>I understand the SEO risks</strong> and want to include <code>llms.txt</code> in the sitemap</p>
+                </label>
+            </p>
+            <p>
+                <label>
                     <?php esc_html_e('Maximum posts per type:', 'website-llms-txt'); ?>
                     <input type="number" 
                            name="llms_generator_settings[max_posts]" 
@@ -126,7 +138,6 @@ if (isset($_GET['settings-updated']) &&
                            max="100000">
                 </label>
             </p>
-
             <p>
                 <label>
                     <?php esc_html_e('Maximum words:', 'website-llms-txt'); ?>
@@ -137,7 +148,6 @@ if (isset($_GET['settings-updated']) &&
                            max="100000">
                 </label>
             </p>
-            
             <p>
                 <label>
                     <input type="checkbox" 
@@ -147,7 +157,6 @@ if (isset($_GET['settings-updated']) &&
                     <?php esc_html_e('Include meta information (publish date, author, etc.)', 'website-llms-txt'); ?>
                 </label>
             </p>
-            
             <p>
                 <label>
                     <input type="checkbox" 
@@ -157,7 +166,6 @@ if (isset($_GET['settings-updated']) &&
                     <?php esc_html_e('Include post excerpts', 'website-llms-txt'); ?>
                 </label>
             </p>
-            
             <p>
                 <label>
                     <input type="checkbox" 
@@ -167,7 +175,6 @@ if (isset($_GET['settings-updated']) &&
                     <?php esc_html_e('Include taxonomies (categories, tags, etc.)', 'website-llms-txt'); ?>
                 </label>
             </p>
-
             <h3><?php esc_html_e('Update Frequency', 'website-llms-txt'); ?></h3>
             <p>
                 <label>
@@ -184,7 +191,6 @@ if (isset($_GET['settings-updated']) &&
                     </select>
                 </label>
             </p>
-
             <?php submit_button(esc_html__('Save Settings', 'website-llms-txt')); ?>
         </form>
     </div>
