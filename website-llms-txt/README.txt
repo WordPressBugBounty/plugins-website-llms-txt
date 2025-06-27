@@ -4,15 +4,13 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 7.0.3
+Stable tag: 7.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Automatically generate and manage LLMS.txt files for LLM/AI content understanding, with full Yoast SEO and RankMath integration.
 
 == Description ==
-
-Website LLMs.txt helps your website become discoverable in the age of generative AI.
 
 This plugin automatically generates an LLMs.txt file — a simple, structured list of important public URLs from your site — designed specifically for Large Language Models (LLMs) like ChatGPT, Perplexity, Claude, and other AI systems.
 It works much like a traditional XML sitemap, but is optimized for the way AI agents read and learn from the web.
@@ -22,8 +20,6 @@ The plugin integrates seamlessly with popular SEO tools like Yoast SEO, Rank Mat
 ✅ Future-proof your site for AI discovery
 ✅ Lightweight, automatic, and customizable
 ✅ No need for manual configuration
-
-Whether you’re running a blog, store, portfolio, or membership site — LLMs.txt ensures your content is seen and understood by the next generation of intelligent assistants.
 
 Features:
 
@@ -62,6 +58,15 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 7.0.4 =
+
+🛠️ Bug Fixes & Enhancements
+
+• Added X-Robots-Tag: noindex header for llms.txt by default to discourage indexing by search engines.
+• Introduced a checkbox setting to optionally disable the noindex header (not recommended).
+• Cleaned up plugin description for clarity and removed outdated marketing language.
+• Minor internal code improvements for consistency and maintainability.
 
 = 7.0.3 =
 
@@ -833,3 +838,12 @@ These updates improve localization accuracy, content visibility logic, and metad
 • Added support for excluding llms.txt from sitemaps by default to prevent unintended indexing by search engines.
 • Introduced an optional checkbox in settings to allow manual inclusion of llms.txt in the sitemap, with a clear SEO warning.
 • On plugin deactivation, scheduled tasks related to llms.txt are now properly cleared and the file is removed from the site root to avoid stale exposure.
+
+= 7.0.4 =
+
+🛠️ Bug Fixes & Enhancements
+
+• Added X-Robots-Tag: noindex header for llms.txt by default to discourage indexing by search engines.
+• Introduced a checkbox setting to optionally disable the noindex header (not recommended).
+• Cleaned up plugin description for clarity and removed outdated marketing language.
+• Minor internal code improvements for consistency and maintainability.

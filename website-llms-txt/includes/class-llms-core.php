@@ -172,6 +172,7 @@ class LLMS_Core {
         // Sanitize boolean values
         $clean['llms_allow_indexing'] = !empty($value['llms_allow_indexing']);
         $clean['include_meta'] = !empty($value['include_meta']);
+        $clean['noindex_header'] = !empty($value['noindex_header']);
         $clean['include_excerpts'] = !empty($value['include_excerpts']);
         $clean['include_taxonomies'] = !empty($value['include_taxonomies']);
 
@@ -283,6 +284,16 @@ class LLMS_Core {
     }
 
     public function handle_llms_request() {
+        $settings = apply_filters('get_llms_generator_settings', []);
+        $request_uri = isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] ? trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/') : '';
+
+        if ($request_uri === 'llms.txt') {
+            $disable_noindex = $settings['noindex_header'] ?? '';
+            if ( !$disable_noindex ) {
+                header('X-Robots-Tag: noindex');
+            }
+        }
+
         if (get_query_var('llms_txt')) {
             $latest_post = apply_filters('get_llms_content', '');
             if ($latest_post) {

@@ -114,18 +114,23 @@ if (isset($_GET['settings-updated']) &&
                 }
                 ?>
             </div>
-
             <h3><?php esc_html_e('Content Options', 'website-llms-txt'); ?></h3>
             <p>
                 <label>
-                    <strong>⚠️ Warning:</strong> Including <code>llms.txt</code> in your sitemap may lead to it being crawled and indexed by search engines like Google. If your file contains full post content, this could trigger duplicate content issues or filtering in search results. Use only if you understand the SEO impact.<br/><br/>
+                    <input type="checkbox" name="llms_generator_settings[noindex_header]" value="1" <?php checked( !empty($settings['noindex_header']) ); ?> />
+                    <?php _e('Disable “noindex” header for llms.txt', 'website-llms-txt'); ?>
+                </label>
+            </p>
+            <p>
+                <label>
+                    <strong><?php _e('⚠️ Warning:</strong> Including <code>llms.txt</code> in your sitemap may lead to it being crawled and indexed by search engines like Google. If your file contains full post content, this could trigger duplicate content issues or filtering in search results. Use only if you understand the SEO impact.', 'website-llms-txt'); ?><br/><br/>
                     <input
                         type="checkbox"
                         name="llms_generator_settings[llms_allow_indexing]"
                         value="1"
                         <?php checked(!empty($settings['llms_allow_indexing'])); ?>
                     />
-                    <strong>I understand the SEO risks</strong> and want to include <code>llms.txt</code> in the sitemap</p>
+                    <strong><?php _e('I understand the SEO risks</strong> and want to include <code>llms.txt</code> in the sitemap', 'website-llms-txt'); ?></p>
                 </label>
             </p>
             <p>

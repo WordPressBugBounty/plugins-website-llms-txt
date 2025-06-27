@@ -26,6 +26,7 @@ class LLMS_Generator
             'include_taxonomies' => true,
             'update_frequency' => 'immediate',
             'need_check_option' => true,
+            'noindex_header' => false,
             'llms_allow_indexing' => false,
         ));
 
