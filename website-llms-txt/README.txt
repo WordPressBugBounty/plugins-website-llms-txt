@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 7.0.4
+Stable tag: 7.0.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,13 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 7.0.8 =
+
+🛠 Improvements & Fixes
+- File Status section now conditionally displays links (e.g. sitemap) only when relevant settings are enabled
+- Prevents broken links when sitemap inclusion is not selected
+- Minor UI consistency improvements
 
 = 7.0.4 =
 
@@ -847,3 +854,10 @@ These updates improve localization accuracy, content visibility logic, and metad
 • Introduced a checkbox setting to optionally disable the noindex header (not recommended).
 • Cleaned up plugin description for clarity and removed outdated marketing language.
 • Minor internal code improvements for consistency and maintainability.
+
+= 7.0.7 =
+
+🛠 Improvements & Fixes
+- File Status section now conditionally displays links (e.g. sitemap) only when relevant settings are enabled
+- Prevents broken links when sitemap inclusion is not selected
+- Minor UI consistency improvements

@@ -4,6 +4,7 @@ if (!defined('ABSPATH')) {
 }
 
 $latest_post = apply_filters('get_llms_content', '');
+$settings = apply_filters('get_llms_generator_settings', []);
 
 // Verify cache cleared nonce and display message
 if (isset($_GET['cache_cleared']) && $_GET['cache_cleared'] === 'true' && 
@@ -34,9 +35,11 @@ if (isset($_GET['settings-updated']) &&
             <p><?php esc_html_e('View files:', 'website-llms-txt'); ?></p>
             <ul>
                 <li><a href="<?php echo esc_url(home_url('/llms.txt')); ?>" target="_blank"><?php echo esc_url(home_url('/llms.txt')); ?></a></li>
-                <?php if (class_exists('RankMath') || (defined('WPSEO_VERSION') && class_exists('WPSEO_Sitemaps'))): ?>
-                    <li><a href="<?php echo esc_url(home_url('/sitemap_index.xml')); ?>" target="_blank"><?php echo esc_url(home_url('/sitemap_index.xml')); ?></a></li>
-                    <li><a href="<?php echo esc_url(home_url('/llms-sitemap.xml')); ?>" target="_blank"><?php echo esc_url(home_url('/llms-sitemap.xml')); ?></a></li>
+                <?php if(isset($settings['llms_allow_indexing']) && $settings['llms_allow_indexing']): ?>
+                    <?php if (class_exists('RankMath') || (defined('WPSEO_VERSION') && class_exists('WPSEO_Sitemaps'))): ?>
+                        <li><a href="<?php echo esc_url(home_url('/sitemap_index.xml')); ?>" target="_blank"><?php echo esc_url(home_url('/sitemap_index.xml')); ?></a></li>
+                        <li><a href="<?php echo esc_url(home_url('/llms-sitemap.xml')); ?>" target="_blank"><?php echo esc_url(home_url('/llms-sitemap.xml')); ?></a></li>
+                    <?php endif; ?>
                 <?php endif; ?>
             </ul>
         <?php else: ?>
