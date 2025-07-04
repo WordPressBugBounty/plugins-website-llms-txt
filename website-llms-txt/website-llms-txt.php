@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Website LLMs.txt
  * Description: Manages and automatically generates LLMS.txt files for LLM/AI consumption and integrates with SEO plugins (Yoast SEO, RankMath)
- * Version: 7.0.8
+ * Version: 7.0.9
  * Author: Website LLM
  * Author URI: https://www.websitellm.com
  * Text Domain: website-llms-txt
@@ -18,13 +18,14 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('LLMS_VERSION', '7.0.8');
+define('LLMS_VERSION', '7.0.9');
 define('LLMS_PLUGIN_FILE', __FILE__);
 define('LLMS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('LLMS_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // Initialize plugin
 require_once LLMS_PLUGIN_DIR . 'includes/class-llms-core.php';
+require_once LLMS_PLUGIN_DIR . 'includes/class-llms-crawler.php';
 require_once LLMS_PLUGIN_DIR . 'includes/class-llms-cache-manager.php';
 
 // Initialize the plugin

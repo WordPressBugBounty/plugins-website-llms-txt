@@ -27,6 +27,7 @@ class LLMS_Core {
 
         // Register settings
         add_action('admin_init', array($this, 'register_settings'));
+        add_action('admin_notices', array($this, 'llms_ai_banner_dismissed'));
 
         // Add required scripts for admin
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
@@ -36,6 +37,20 @@ class LLMS_Core {
         add_action('all_admin_notices', array($this, 'all_admin_notices'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_notice_script'));
         add_action('wp_ajax_dismiss_llms_admin_notice', array($this, 'dismiss_llms_admin_notice'));
+        add_action('wp_ajax_dismiss_llms_ai_banner_dismissed', array($this, 'dismiss_llms_ai_banner_dismissed'));
+    }
+    public function dismiss_llms_ai_banner_dismissed() {
+        check_ajax_referer('llms_dismiss_notice', 'nonce');
+        update_user_meta(get_current_user_id(), 'llms_ai_banner_dismissed', 1);
+        wp_send_json_success();
+    }
+    public function llms_ai_banner_dismissed() {
+        if (get_user_meta(get_current_user_id(), 'llms_ai_banner_dismissed', true)) return;
+        $how_it_works_url = admin_url('tools.php?page=llms-file-manager&tab=how-it-works');
+        echo '<div class="notice notice-info is-dismissible llms-ai-banner">
+            <p><strong>AI Crawler Detection is here!</strong> — 
+            <a href="' . esc_url($how_it_works_url) . '">How it works</a></p>
+        </div>';
     }
 
     public function all_admin_notices() {
@@ -139,6 +154,8 @@ class LLMS_Core {
                     'update_frequency' => 'immediate',
                     'need_check_option' => true,
                     'llms_allow_indexing' => false,
+                    'llms_local_log_enabled' => false,
+                    'llms_global_telemetry_optin' => false,
                 )
             )
         );
@@ -171,6 +188,8 @@ class LLMS_Core {
         
         // Sanitize boolean values
         $clean['llms_allow_indexing'] = !empty($value['llms_allow_indexing']);
+        $clean['llms_local_log_enabled'] = !empty($value['llms_local_log_enabled']);
+        $clean['llms_global_telemetry_optin'] = !empty($value['llms_global_telemetry_optin']);
         $clean['include_meta'] = !empty($value['include_meta']);
         $clean['noindex_header'] = !empty($value['noindex_header']);
         $clean['include_excerpts'] = !empty($value['include_excerpts']);

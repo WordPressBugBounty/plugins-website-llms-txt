@@ -43,3 +43,17 @@
     margin-bottom: 15px;
 }
 
+.card.how-it-works {
+    border: 2px solid #72aee6;
+}
+
+.card-wrap {
+    display: flex;
+    gap: 20px;
+}
+
+@media (max-width: 600px) {
+    .card-wrap {
+        flex-direction: column;
+    }
+}

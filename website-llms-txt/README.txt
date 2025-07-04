@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 7.0.8
+Stable tag: 7.0.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,6 +20,10 @@ The plugin integrates seamlessly with popular SEO tools like Yoast SEO, Rank Mat
 ✅ Future-proof your site for AI discovery
 ✅ Lightweight, automatic, and customizable
 ✅ No need for manual configuration
+
+New: llms.txt AI crawler detection
+We now track whether major AI bots like GPTBot, ClaudeBot, and PerplexityBot are reading `llms.txt` files.
+Learn more: https://www.ryanhoward.dev/p/are-ai-search-bots-actually-looking-at-llms-txt-files
 
 Features:
 
@@ -58,6 +62,18 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 7.0.9 =
+
+🧠 New Feature: AI Crawler Detection
+
+• Added new admin section with detailed insights into AI bot activity on your llms.txt file
+• Introduced logging for AI crawlers like GPTBot, ClaudeBot, and PerplexityBot — including bot name and last seen timestamp
+• Added dashboard table to view recent bot visits (max 100 entries, rolling log)
+• New setting: opt in to the global AI crawler detection experiment — anonymously share bot access data (hashed domain + bot name)
+• All telemetry is privacy-first: no content or personal data is collected or stored
+• Integrated backend support for real-time participation tracking across thousands of sites
+• Added admin banner linking to “How it works” with full experiment explanation
 
 = 7.0.8 =
 
@@ -855,9 +871,21 @@ These updates improve localization accuracy, content visibility logic, and metad
 • Cleaned up plugin description for clarity and removed outdated marketing language.
 • Minor internal code improvements for consistency and maintainability.
 
-= 7.0.7 =
+= 7.0.8 =
 
 🛠 Improvements & Fixes
 - File Status section now conditionally displays links (e.g. sitemap) only when relevant settings are enabled
 - Prevents broken links when sitemap inclusion is not selected
 - Minor UI consistency improvements
+
+= 7.0.9 =
+
+🧠 New Feature: AI Crawler Detection
+
+• Added new admin section with detailed insights into AI bot activity on your llms.txt file
+• Introduced logging for AI crawlers like GPTBot, ClaudeBot, and PerplexityBot — including bot name and last seen timestamp
+• Added dashboard table to view recent bot visits (max 100 entries, rolling log)
+• New setting: opt in to the global AI crawler detection experiment — anonymously share bot access data (hashed domain + bot name)
+• All telemetry is privacy-first: no content or personal data is collected or stored
+• Integrated backend support for real-time participation tracking across thousands of sites
+• Added admin banner linking to “How it works” with full experiment explanation

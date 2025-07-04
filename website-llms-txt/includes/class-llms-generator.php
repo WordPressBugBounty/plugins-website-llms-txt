@@ -28,6 +28,8 @@ class LLMS_Generator
             'need_check_option' => true,
             'noindex_header' => false,
             'llms_allow_indexing' => false,
+            'llms_local_log_enabled' => false,
+            'llms_global_telemetry_optin' => false,
         ));
 
         // Initialize content cleaner
