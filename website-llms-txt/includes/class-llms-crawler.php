@@ -9,6 +9,12 @@ class LLMS_Crawler
     public function __construct()
     {
         add_action('admin_init', function () {
+            $settings = apply_filters('get_llms_generator_settings', []);
+            if (!isset($settings['llms_local_log_enabled']) || !$settings['llms_local_log_enabled']) {
+                $this->send_status(0);
+            } else {
+                $this->send_status(1);
+            }
             register_setting('llms_options_group', 'llms_crawler_options');
         });
 
@@ -35,11 +41,41 @@ class LLMS_Crawler
         update_option('llms_local_log', $log);
     }
 
+    public function send_status( $active )
+    {
+        $need_send = true;
+        $domain = parse_url(home_url(), PHP_URL_HOST);
+        $site_hash = hash('sha256', $domain);
+        $enabled_status = get_option('llms_site_log_enabled_status');
+        if(isset($enabled_status[$site_hash]) && $enabled_status[$site_hash] === $active) {
+            $need_send = false;
+        }
+
+        if($need_send) {
+            $array[$site_hash] = $active;
+            update_option('llms_site_log_enabled_status', $array);
+            wp_remote_post('https://llmstxt.ryanhoward.dev/api/site-status', [
+                'method'  => 'POST',
+                'timeout' => 5,
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                ],
+                'body' => wp_json_encode([
+                    'site' => $site_hash,
+                    'active'  => $active,
+                ]),
+            ]);
+        }
+    }
+
     public function llms_check_ai_bot() {
         $settings = apply_filters('get_llms_generator_settings', []);
         if (!isset($settings['llms_local_log_enabled']) || !$settings['llms_local_log_enabled']) {
             return;
         }
+
+        $domain = parse_url(home_url(), PHP_URL_HOST);
+        $site_hash = hash('sha256', $domain);
 
         $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $bots = $this->llms_get_known_bots();
@@ -48,8 +84,6 @@ class LLMS_Crawler
             if (stripos($user_agent, $agent) !== false) {
                 $this->llms_log_bot_visit($agent);
 
-                $domain = parse_url(home_url(), PHP_URL_HOST);
-                $site_hash = hash('sha256', $domain);
                 $timestamp = current_time( 'mysql' );
                 $iso_time  = date( DATE_ATOM, strtotime( $timestamp ) );
 

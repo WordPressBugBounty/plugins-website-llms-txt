@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 7.0.9
+Stable tag: 7.1.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,7 +23,9 @@ The plugin integrates seamlessly with popular SEO tools like Yoast SEO, Rank Mat
 
 New: llms.txt AI crawler detection
 We now track whether major AI bots like GPTBot, ClaudeBot, and PerplexityBot are reading `llms.txt` files.
-Learn more: https://www.ryanhoward.dev/p/are-ai-search-bots-actually-looking-at-llms-txt-files
+
+<a href="https://www.ryanhoward.dev/p/are-ai-search-bots-actually-looking-at-llms-txt-files" target="_blank">About crawler detection</a>
+<a href="https://www.ryanhoward.dev/p/everything-we-know-about-llms-txt-573e">Everything we know about llms.txt</a>
 
 Features:
 
@@ -62,6 +64,22 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 7.1.1 =
+
+🐞 Bug Fix: LLMS Crawler Activation
+
+• Fixed an issue where the LLMS Crawler feature was not activating correctly after plugin installation or settings update
+• Ensures that the crawler logging toggle properly saves and reflects the current state in the admin UI
+• Improved reliability of the global experiment opt-in status
+
+= 7.1.0 =
+
+🐞 Bug Fix: Admin Menu Compatibility
+
+• Fixed a PHP notice when WP_DEBUG is enabled, caused by incorrect usage of `add_submenu_page()`
+• The submenu page no longer passes an icon name (`dashicons-media-text`) as the 7th parameter — now uses a proper numeric menu position
+• Improves compatibility with WordPress >= 5.3 and prevents unnecessary log noise
 
 = 7.0.9 =
 
@@ -889,3 +907,19 @@ These updates improve localization accuracy, content visibility logic, and metad
 • All telemetry is privacy-first: no content or personal data is collected or stored
 • Integrated backend support for real-time participation tracking across thousands of sites
 • Added admin banner linking to “How it works” with full experiment explanation
+
+= 7.1.0 =
+
+🐞 Bug Fix: Admin Menu Compatibility
+
+• Fixed a PHP notice when WP_DEBUG is enabled, caused by incorrect usage of `add_submenu_page()`
+• The submenu page no longer passes an icon name (`dashicons-media-text`) as the 7th parameter — now uses a proper numeric menu position
+• Improves compatibility with WordPress >= 5.3 and prevents unnecessary log noise
+
+= 7.1.1 =
+
+🐞 Bug Fix: LLMS Crawler Activation
+
+• Fixed an issue where the LLMS Crawler feature was not activating correctly after plugin installation or settings update
+• Ensures that the crawler logging toggle properly saves and reflects the current state in the admin UI
+• Improved reliability of the global experiment opt-in status
