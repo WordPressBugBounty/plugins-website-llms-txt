@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 7.1.2
+Stable tag: 7.1.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,16 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 7.1.4 =
+
+🐞 Bug Fixes: Generator Stability and PHP 8.x Compatibility
+
+• Fixed PHP warnings about undefined `$output` variable in `class-llms-generator.php` when generating LLMS data
+• Fixed deprecated usage of `mb_convert_encoding()` with null input on line 428
+• Ensures `$output` is always initialized before being used and passed to `mb_convert_encoding()`
+• Improved error handling when no content is available to write during generation
+• Verified compatibility with PHP 8.1 and 8.2 to prevent log noise and execution failures
 
 = 7.1.1 =
 
@@ -923,3 +933,13 @@ These updates improve localization accuracy, content visibility logic, and metad
 • Fixed an issue where the LLMS Crawler feature was not activating correctly after plugin installation or settings update
 • Ensures that the crawler logging toggle properly saves and reflects the current state in the admin UI
 • Improved reliability of the global experiment opt-in status
+
+= 7.1.4 =
+
+🐞 Bug Fixes: Generator Stability and PHP 8.x Compatibility
+
+• Fixed PHP warnings about undefined `$output` variable in `class-llms-generator.php` when generating LLMS data
+• Fixed deprecated usage of `mb_convert_encoding()` with null input on line 428
+• Ensures `$output` is always initialized before being used and passed to `mb_convert_encoding()`
+• Improved error handling when no content is available to write during generation
+• Verified compatibility with PHP 8.1 and 8.2 to prevent log noise and execution failures

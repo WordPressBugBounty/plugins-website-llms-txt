@@ -243,7 +243,7 @@ class LLMS_Generator
             $output .= "> " . $meta_description . "\n\n";
         }
         $output .= "---\n\n";
-        $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+        $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
         unset($output);
         unset($meta_description);
     }
@@ -278,7 +278,7 @@ class LLMS_Generator
 
             $post_type_obj = get_post_type_object($post_type);
             if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
-                $this->write_file(mb_convert_encoding("\n## {$post_type_obj->labels->name}\n\n", 'UTF-8', 'auto'));
+                $this->write_file(mb_convert_encoding("\n## {$post_type_obj->labels->name}\n\n", 'UTF-8', 'UTF-8'));
             }
 
             $offset = 0;
@@ -314,7 +314,7 @@ class LLMS_Generator
                         unset($data);
                     }
 
-                    $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+                    $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
                     unset($output);
                 }
 
@@ -322,7 +322,7 @@ class LLMS_Generator
 
             } while (!empty($posts) && !$exit);
 
-            $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'auto'));
+            $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'UTF-8'));
 
             if (defined('WP_CLI') && WP_CLI) {
                 \WP_CLI::log('End generate overview');
@@ -339,7 +339,7 @@ class LLMS_Generator
         }
 
         $output = "#\n" . "# Detailed Content\n\n";
-        $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+        $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
 
         $table_cache = $wpdb->prefix . 'llms_txt_cache';
 
@@ -349,7 +349,7 @@ class LLMS_Generator
             $post_type_obj = get_post_type_object($post_type);
             if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
                 $output = "\n## " . $post_type_obj->labels->name . "\n\n";
-                $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+                $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
             }
 
             if (defined('WP_CLI') && WP_CLI) {
@@ -359,9 +359,9 @@ class LLMS_Generator
             $offset = 0;
             $exit = false;
             $i = 0;
-            $output = '';
 
             do {
+                $output = '';
                 $conditions = " WHERE `type` = %s AND `show`=1 AND `status`='publish' ";
                 $params = [
                     $post_type,
@@ -425,14 +425,14 @@ class LLMS_Generator
                     }
                 }
 
-                $this->write_file(mb_convert_encoding($output, 'UTF-8', 'auto'));
+                $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
                 unset($output);
 
                 $offset += $this->limit;
 
             } while (!empty($posts) && !$exit);
 
-            $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'auto'));
+            $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'UTF-8'));
 
             if (defined('WP_CLI') && WP_CLI) {
                 \WP_CLI::log('End generate detailed content');
