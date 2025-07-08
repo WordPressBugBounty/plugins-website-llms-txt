@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 7.1.5
+Stable tag: 7.1.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,15 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 7.1.6 =
+
+🐞 Bug Fixes & Enhancements: Stability, Indexing, and Compatibility
+
+• Fixed PHP warning for undefined llms_allow_indexing key in yoast.php, added proper default handling.
+• Improved compatibility with Yoast SEO & RankMath by checking settings arrays before use.
+• Enhanced fallback handling for missing meta descriptions and cleaned up fallback output in generated files.
+• Minor code refactoring for better PHP 8.2+ compatibility and reduced log noise.
 
 = 7.1.5 =
 
@@ -969,3 +978,12 @@ These updates improve localization accuracy, content visibility logic, and metad
 
 ✅ Recommended upgrade if you use WooCommerce, Divi theme, or WP-Rocket, and/or run with WP_DEBUG enabled.
 🎯 Thanks to all users who reported and helped debug these issues!
+
+= 7.1.6 =
+
+🐞 Bug Fixes & Enhancements: Stability, Indexing, and Compatibility
+
+• Fixed PHP warning for undefined llms_allow_indexing key in yoast.php, added proper default handling.
+• Improved compatibility with Yoast SEO & RankMath by checking settings arrays before use.
+• Enhanced fallback handling for missing meta descriptions and cleaned up fallback output in generated files.
+• Minor code refactoring for better PHP 8.2+ compatibility and reduced log noise.

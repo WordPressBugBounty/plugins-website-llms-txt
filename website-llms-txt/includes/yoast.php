@@ -38,7 +38,7 @@ class LLMS_Yoast_Integration {
 
     public function generate_sitemap() {
         $settings = apply_filters('get_llms_generator_settings', []);
-        if($settings['llms_allow_indexing']) {
+        if(isset($settings['llms_allow_indexing']) && $settings['llms_allow_indexing']) {
             $latest_post = get_posts([
                 'post_type' => 'llms_txt',
                 'posts_per_page' => 1,
@@ -79,7 +79,7 @@ SEO;
 
     public function add_to_index($sitemap) {
         $settings = apply_filters('get_llms_generator_settings', []);
-        if($settings['llms_allow_indexing']) {
+        if(isset($settings['llms_allow_indexing']) && $settings['llms_allow_indexing']) {
             $latest_post = get_posts([
                 'post_type' => 'llms_txt',
                 'posts_per_page' => 1,
