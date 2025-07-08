@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 7.1.4
+Stable tag: 7.1.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,19 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 7.1.5 =
+
+🐞 Bug Fixes & Improvements: WooCommerce, WP-Rocket, PHP Notices, and I18N
+
+• Fixed a fatal error when editing WooCommerce products (has_weight() on null) caused by the plugin calling do_shortcode() on product content — now properly checks context and avoids passing invalid post data to WooCommerce templates.
+• Adjusted WP-Rocket cache clearing behavior.
+• Resolved PHP Notice in admin menu creation (add_submenu_page) by ensuring the 7th parameter is numeric (position), no longer passing invalid icon string.
+• Improved I18N (Internationalization) strings in admin-page.php for proper localization and improved translations.
+• Added minor UI fixes and cleaned up wording in the admin area.
+
+✅ Recommended upgrade if you use WooCommerce, Divi theme, or WP-Rocket, and/or run with WP_DEBUG enabled.
+🎯 Thanks to all users who reported and helped debug these issues!
 
 = 7.1.4 =
 
@@ -943,3 +956,16 @@ These updates improve localization accuracy, content visibility logic, and metad
 • Ensures `$output` is always initialized before being used and passed to `mb_convert_encoding()`
 • Improved error handling when no content is available to write during generation
 • Verified compatibility with PHP 8.1 and 8.2 to prevent log noise and execution failures
+
+= 7.1.5 =
+
+🐞 Bug Fixes & Improvements: WooCommerce, WP-Rocket, PHP Notices, and I18N
+
+• Fixed a fatal error when editing WooCommerce products (has_weight() on null) caused by the plugin calling do_shortcode() on product content — now properly checks context and avoids passing invalid post data to WooCommerce templates.
+• Adjusted WP-Rocket cache clearing behavior.
+• Resolved PHP Notice in admin menu creation (add_submenu_page) by ensuring the 7th parameter is numeric (position), no longer passing invalid icon string.
+• Improved I18N (Internationalization) strings in admin-page.php for proper localization and improved translations.
+• Added minor UI fixes and cleaned up wording in the admin area.
+
+✅ Recommended upgrade if you use WooCommerce, Divi theme, or WP-Rocket, and/or run with WP_DEBUG enabled.
+🎯 Thanks to all users who reported and helped debug these issues!

@@ -17,6 +17,18 @@ add_filter('rank_math/sitemap/providers', function($providers) {
 /**
  * Clear SEO plugin sitemap caches when LLMS.txt is updated
  */
+add_action('llms_clear_seo_caches_rank_math', function() {
+    // Clear RankMath cache if active
+    if (class_exists('\RankMath\Sitemap\Cache')) {
+        \RankMath\Sitemap\Cache::invalidate_storage();
+    }
+
+    // Clear Yoast cache if active
+    if (class_exists('WPSEO_Sitemaps_Cache')) {
+        WPSEO_Sitemaps_Cache::clear();
+    }
+});
+
 add_action('llms_clear_seo_caches', function() {
     // Clear RankMath cache if active
     if (class_exists('\RankMath\Sitemap\Cache')) {

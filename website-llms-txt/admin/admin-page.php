@@ -115,19 +115,19 @@ if (isset($_GET['settings-updated']) &&
                     <p>
                         <label>
                             <input type="checkbox" name="llms_generator_settings[noindex_header]" value="1" <?php checked( !empty($settings['noindex_header']) ); ?> />
-                            <?php _e('Disable “noindex” header for llms.txt', 'website-llms-txt'); ?>
+                            <?php esc_html_e('Disable “noindex” header for llms.txt', 'website-llms-txt'); ?>
                         </label>
                     </p>
                     <p>
                         <label>
-                            <strong><?php _e('⚠️ Warning:</strong> Including <code>llms.txt</code> in your sitemap may lead to it being crawled and indexed by search engines like Google. If your file contains full post content, this could trigger duplicate content issues or filtering in search results. Use only if you understand the SEO impact.', 'website-llms-txt'); ?><br/><br/>
+                            <?php printf(esc_html__('%1$s⚠️ Warning:%2$s Including %3$sllms.txt%4$s in your sitemap may lead to it being crawled and indexed by search engines like Google. If your file contains full post content, this could trigger duplicate content issues or filtering in search results. Use only if you understand the SEO impact.', 'website-llms-txt'),'<strong>','</strong>','<code>','</code>'); ?><br/><br/>
                             <input
                                 type="checkbox"
                                 name="llms_generator_settings[llms_allow_indexing]"
                                 value="1"
                                 <?php checked(!empty($settings['llms_allow_indexing'])); ?>
                             />
-                            <strong><?php _e('I understand the SEO risks</strong> and want to include <code>llms.txt</code> in the sitemap', 'website-llms-txt'); ?></p>
+                            <?php printf(esc_html__('%1$sI understand the SEO risks%2$s and want to include %3$sllms.txt%4$s in the sitemap', 'website-llms-txt'),'<strong>','</strong>','<code>','</code>'); ?></p>
                         </label>
                     </p>
                     <p>
@@ -234,23 +234,23 @@ if (isset($_GET['settings-updated']) &&
             <div class="card <?php echo $tab; ?>">
                 <form method="post" action="options.php" id="llms-settings-crawler-form">
                     <?php settings_fields('llms_generator_settings'); ?>
-                    <h2><?php _e('AI Crawler Detection','website-llms-txt') ?></h2>
-                    <p><?php _e('Be the first to know if AI bots are reading your <code>llms.txt</code> file. Join the global experiment to track major AI crawlers (like GPTBot, ClaudeBot, and PerplexityBot) accessing <code>llms.txt</code> files across the web.','website-llms-txt') ?></p>
+                    <h2><?php esc_html_e('AI Crawler Detection','website-llms-txt') ?></h2>
+                    <p><?php printf(esc_html__('Be the first to know if AI bots are reading your %1$sllms.txt%2$s file. Join the global experiment to track major AI crawlers (like GPTBot, ClaudeBot, and PerplexityBot) accessing %1$sllms.txt%2$s files across the web.','website-llms-txt'),'<code>','</code>') ?></p>
                     <p>
                         <label>
                             <input
                                 type="checkbox"
                                 name="llms_generator_settings[llms_local_log_enabled]"
                                 value="1" <?php checked(!empty($settings['llms_local_log_enabled'])); ?>>
-                            <?php _e('Log AI bot visits and contribute to the global experiment','website-llms-txt') ?>
+                            <?php esc_html_e('Log AI bot visits and contribute to the global experiment','website-llms-txt') ?>
                         </label>
                     </p>
                     <p style="font-size: 90%; max-width: 600px;">
-                        <?php _e('All data is encrypted and anonymous. The data shared includes the bot name, timestamp, and a hashed version of your domain to track LLM crawler behavior across thousands of sites. No content or personal information is collected or stored.','website-llms-txt') ?>
+                        <?php esc_html_e('All data is encrypted and anonymous. The data shared includes the bot name, timestamp, and a hashed version of your domain to track LLM crawler behavior across thousands of sites. No content or personal information is collected or stored.','website-llms-txt') ?>
                     </p>
                     <p>
                         <a href="https://www.ryanhoward.dev/p/are-ai-search-bots-actually-looking-at-llms-txt-files" target="_blank"><?php _e('Experiment details','website-llms-txt') ?></a> |
-                        <a href="https://llmstxt.ryanhoward.dev" target="_blank"><?php _e('All websites data counter','website-llms-txt') ?></a>
+                        <a href="https://llmstxt.ryanhoward.dev" target="_blank"><?php esc_html_e('All websites data counter','website-llms-txt') ?></a>
                     </p>
                     <?php if(!empty($settings)): ?>
                         <?php foreach($settings as $key => $value): ?>
@@ -270,13 +270,13 @@ if (isset($_GET['settings-updated']) &&
             <?php if(isset($settings['llms_local_log_enabled']) && $settings['llms_local_log_enabled']): ?>
                 <?php $entries = get_option('llms_local_log', []); ?>
                 <div class="card">
-                    <h3><?php _e('Recent AI Crawler Activity', 'website-llms-txt'); ?></h3>
+                    <h3><?php esc_html_e('Recent AI Crawler Activity', 'website-llms-txt'); ?></h3>
                     <?php if ($entries) : ?>
                         <table class="widefat">
                             <thead>
                                 <tr>
-                                    <th><?php _e('Crawler','website-llms-txt') ?></th>
-                                    <th><?php _e('Last Seen','website-llms-txt') ?></th>
+                                    <th><?php esc_html_e('Crawler','website-llms-txt') ?></th>
+                                    <th><?php esc_html_e('Last Seen','website-llms-txt') ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -289,7 +289,7 @@ if (isset($_GET['settings-updated']) &&
                             </tbody>
                         </table>
                     <?php else : ?>
-                        <p><?php _e('No bot visits logged yet.','website-llms-txt') ?></p>
+                        <p><?php esc_html_e('No bot visits logged yet.','website-llms-txt') ?></p>
                     <?php endif ?>
                 </div>
             <?php endif ?>

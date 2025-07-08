@@ -48,8 +48,8 @@ class LLMS_Core {
         if (get_user_meta(get_current_user_id(), 'llms_ai_banner_dismissed', true)) return;
         $how_it_works_url = admin_url('tools.php?page=llms-file-manager&tab=how-it-works');
         echo '<div class="notice notice-info is-dismissible llms-ai-banner">
-            <p><strong>AI Crawler Detection is here!</strong> — 
-            <a href="' . esc_url($how_it_works_url) . '">How it works</a></p>
+            <p><strong>' . esc_html__('AI Crawler Detection is here!','website-llms-txt') . '</strong> — 
+            <a href="' . esc_url($how_it_works_url) . '">' . esc_html__('How it works','website-llms-txt') . '</a></p>
         </div>';
     }
 
@@ -59,9 +59,9 @@ class LLMS_Core {
         }
         ?>
         <div class="notice updated is-dismissible llms-admin-notice">
-            <p><?php _e('Website LLMs.txt - Want new features? Suggest and vote to shape our plugin development roadmap.', 'website-llms-txt'); ?>
-                <a href="https://x.com/ryhowww/status/1909712881387462772" target="_blank">Twitter</a> |
-                <a href="https://wordpress.org/support/?post_type=topic&p=18406423">WP Forums</a>
+            <p><?php esc_html_e('Website LLMs.txt - Want new features? Suggest and vote to shape our plugin development roadmap.', 'website-llms-txt'); ?>
+                <a href="https://x.com/ryhowww/status/1909712881387462772" target="_blank"><?php esc_html_e('Twitter', 'website-llms-txt'); ?></a> |
+                <a href="https://wordpress.org/support/?post_type=topic&p=18406423"><?php esc_html_e('WP Forums', 'website-llms-txt'); ?></a>
             </p>
         </div>
         <?php

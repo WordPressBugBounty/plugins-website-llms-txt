@@ -509,13 +509,17 @@ class LLMS_Generator
      */
     public function handle_post_update($post_id, $post, $update)
     {
-        global $wpdb;
+        global $wpdb, $product;
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
             return;
         }
 
         if (!in_array($post->post_type, $this->settings['post_types'])) {
             return;
+        }
+
+        if (function_exists('wc_get_product') &&  ! $product && $post instanceof WP_Post ) {
+            $product = wc_get_product( $post->ID );
         }
 
         $table = $wpdb->prefix . 'llms_txt_cache';
@@ -719,7 +723,8 @@ class LLMS_Generator
             \WP_CLI::log('Clear cache event');
         }
 
-        do_action('llms_clear_seo_caches');
+        do_action('wpseo_cache_clear_sitemap');
+        do_action('llms_clear_seo_caches_rank_math');
     }
 
     public function schedule_updates()
