@@ -148,15 +148,16 @@ class LLMS_Core {
                     'post_types' => array('page', 'documentation', 'post'),
                     'max_posts' => 100,
                     'max_words' => 250,
-                    'include_meta' => true,
-                    'include_excerpts' => true,
-                    'include_taxonomies' => true,
+                    'include_meta' => false,
+                    'include_excerpts' => false,
+                    'include_taxonomies' => false,
                     'update_frequency' => 'immediate',
                     'need_check_option' => true,
                     'llms_allow_indexing' => false,
                     'llms_local_log_enabled' => false,
                     'llms_global_telemetry_optin' => false,
                     'include_md_file' => false,
+                    'detailed_content' => false,
                     'llms_txt_title' => '',
                     'llms_txt_description' => '',
                     'llms_after_txt_description' => '',
@@ -207,10 +208,13 @@ class LLMS_Core {
         $clean['llms_after_txt_description'] = $value['llms_after_txt_description'];
         $clean['llms_end_file_description'] = $value['llms_end_file_description'];
         $clean['include_md_file'] = !empty($value['include_md_file']);
+        $clean['detailed_content'] = !empty($value['detailed_content']);
 
         if(
             ($clean['include_excerpts'] != $settings['include_excerpts']) ||
             ($clean['include_md_file'] != $settings['include_md_file']) ||
+            ($clean['include_taxonomies'] != $settings['include_taxonomies']) ||
+            ($clean['detailed_content'] != $settings['detailed_content']) ||
             ($clean['include_meta'] != $settings['include_meta'])
         ) {
             $table_cache = $wpdb->prefix . 'llms_txt_cache';

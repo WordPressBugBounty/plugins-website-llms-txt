@@ -146,7 +146,16 @@ if (isset($_GET['settings-updated']) &&
                                    name="llms_generator_settings[include_excerpts]"
                                    value="1"
                                 <?php checked(!empty($settings['include_excerpts'])); ?>>
-                            <?php esc_html_e('Include post excerpts', 'website-llms-txt'); ?>
+                            <?php esc_html_e('Include post excerpts / meta descriptions', 'website-llms-txt'); ?>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox"
+                                   name="llms_generator_settings[detailed_content]"
+                                   value="1"
+                                <?php checked(!empty($settings['detailed_content'])); ?>>
+                            <?php esc_html_e('Include detailed content', 'website-llms-txt'); ?>
                         </label>
                     </p>
                     <p>
@@ -160,7 +169,7 @@ if (isset($_GET['settings-updated']) &&
                     </p>
                     <?php if(!empty($settings)): ?>
                         <?php foreach($settings as $key => $value): ?>
-                            <?php if(in_array($key, ['post_types', 'max_posts', 'max_words', 'include_meta', 'include_excerpts', 'include_taxonomies'])) continue ?>
+                            <?php if(in_array($key, ['post_types', 'max_posts', 'max_words', 'include_meta', 'include_excerpts', 'detailed_content', 'include_taxonomies'])) continue ?>
                             <?php if(is_array($value)): ?>
                                 <?php foreach($value as $second_key => $second_value): ?>
                                     <input type="hidden" name="llms_generator_settings[<?= $key ?>][]" value="<?= $second_value ?>"/>

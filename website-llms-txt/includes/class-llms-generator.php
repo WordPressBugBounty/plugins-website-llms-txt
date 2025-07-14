@@ -21,9 +21,9 @@ class LLMS_Generator
             'post_types' => array('page', 'documentation', 'post'),
             'max_posts' => 100,
             'max_words' => 250,
-            'include_meta' => true,
-            'include_excerpts' => true,
-            'include_taxonomies' => true,
+            'include_meta' => false,
+            'include_excerpts' => false,
+            'include_taxonomies' => false,
             'update_frequency' => 'immediate',
             'need_check_option' => true,
             'noindex_header' => false,
@@ -31,6 +31,7 @@ class LLMS_Generator
             'llms_local_log_enabled' => false,
             'llms_global_telemetry_optin' => false,
             'include_md_file' => false,
+            'detailed_content' => false,
             'llms_txt_title' => '',
             'llms_txt_description' => '',
             'llms_after_txt_description' => '',
@@ -353,18 +354,22 @@ class LLMS_Generator
             \WP_CLI::log('Start generate detailed content');
         }
 
-        $output = "#\n" . "# Detailed Content\n\n";
-        $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
+        if($this->settings['detailed_content'] || $this->settings['include_excerpts'] || $this->settings['include_taxonomies'] || $this->settings['include_meta']) {
+            $output = "#\n" . "# Detailed Content\n\n";
+            $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
+        }
 
         $table_cache = $wpdb->prefix . 'llms_txt_cache';
 
         foreach ($this->settings['post_types'] as $post_type) {
             if ($post_type === 'llms_txt') continue;
 
-            $post_type_obj = get_post_type_object($post_type);
-            if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
-                $output = "\n## " . $post_type_obj->labels->name . "\n\n";
-                $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
+            if($this->settings['detailed_content'] || $this->settings['include_excerpts'] || $this->settings['include_taxonomies'] || $this->settings['include_meta']) {
+                $post_type_obj = get_post_type_object($post_type);
+                if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
+                    $output = "\n## " . $post_type_obj->labels->name . "\n\n";
+                    $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
+                }
             }
 
             if (defined('WP_CLI') && WP_CLI) {
@@ -422,8 +427,12 @@ class LLMS_Generator
                             }
                         }
 
-                        $content = wp_trim_words($data->content, $this->settings['max_words'] ?? 250, '...');
-                        $output .= "\n";
+                        $content = '';
+                        if ($this->settings['detailed_content']) {
+                            $content = wp_trim_words($data->content, $this->settings['max_words'] ?? 250, '...');
+                            $output .= "\n";
+                        }
+
 
                         if ($this->settings['include_excerpts'] && $data->excerpts) {
                             $output .= $data->excerpts . "\n\n";
@@ -433,21 +442,27 @@ class LLMS_Generator
                             $output .= $content . "\n\n";
                         }
 
-                        $output .= "---\n\n";
+                        if($this->settings['detailed_content'] || $this->settings['include_excerpts'] || $this->settings['include_taxonomies'] || $this->settings['include_meta']) {
+                            $output .= "---\n\n";
+                        }
                         unset($data);
 
                         $i++;
                     }
                 }
 
-                $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
+                if($this->settings['detailed_content'] || $this->settings['include_excerpts'] || $this->settings['include_taxonomies'] || $this->settings['include_meta']) {
+                    $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
+                }
                 unset($output);
 
                 $offset += $this->limit;
 
             } while (!empty($posts) && !$exit);
 
-            $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'UTF-8'));
+            if($this->settings['detailed_content'] || $this->settings['include_excerpts'] || $this->settings['include_taxonomies'] || $this->settings['include_meta']) {
+                $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'UTF-8'));
+            }
 
             if (defined('WP_CLI') && WP_CLI) {
                 \WP_CLI::log('End generate detailed content');
