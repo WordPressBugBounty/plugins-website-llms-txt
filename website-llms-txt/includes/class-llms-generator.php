@@ -30,6 +30,11 @@ class LLMS_Generator
             'llms_allow_indexing' => false,
             'llms_local_log_enabled' => false,
             'llms_global_telemetry_optin' => false,
+            'include_md_file' => false,
+            'llms_txt_title' => '',
+            'llms_txt_description' => '',
+            'llms_after_txt_description' => '',
+            'llms_end_file_description' => ''
         ));
 
         // Initialize content cleaner
@@ -231,16 +236,26 @@ class LLMS_Generator
     private function generate_site_info()
     {
         // Try to get meta description from Yoast or RankMath
-        $meta_description = $this->get_site_meta_description();
+
+        $settings = apply_filters('get_llms_generator_settings', []);
+        if(isset($settings['llms_txt_description']) && $settings['llms_txt_description']) {
+            $meta_description = $settings['llms_txt_description'];
+        } else {
+            $meta_description = $this->get_site_meta_description();
+        }
         $slug = 'ai-sitemap';
         $existing_page = get_page_by_path( $slug );
         $output = "\xEF\xBB\xBF";
         if(is_a($existing_page,'WP_Post')) {
             $output .= "# Learn more:" . get_permalink($existing_page) . "\n\n";
         }
-        $output .= "# " . get_bloginfo('name') . "\n\n";
+        $output .= "# " . (isset($settings['llms_txt_title']) && $settings['llms_txt_title'] ? $settings['llms_txt_title'] : get_bloginfo('name')) . "\n\n";
         if ($meta_description) {
             $output .= "> " . $meta_description . "\n\n";
+        }
+
+        if (isset($settings['llms_after_txt_description']) && $settings['llms_after_txt_description']) {
+            $output .= "> " . $settings['llms_after_txt_description'] . "\n\n";
         }
         $output .= "---\n\n";
         $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
@@ -394,15 +409,15 @@ class LLMS_Generator
                             if ($data->price) {
                                 $output .= '- Price: ' . esc_html($data->price) . "\n";
                             }
+                        }
 
-                            if ($this->settings['include_taxonomies']) {
-                                $taxonomies = get_object_taxonomies($data->type, 'objects');
-                                foreach ($taxonomies as $tax) {
-                                    $terms = get_the_terms($data->post_id, $tax->name);
-                                    if ($terms && !is_wp_error($terms)) {
-                                        $term_names = wp_list_pluck($terms, 'name');
-                                        $output .= "- " . $tax->labels->name . ": " . implode(', ', $term_names) . "\n";
-                                    }
+                        if ($this->settings['include_taxonomies']) {
+                            $taxonomies = get_object_taxonomies($data->type, 'objects');
+                            foreach ($taxonomies as $tax) {
+                                $terms = get_the_terms($data->post_id, $tax->name);
+                                if ($terms && !is_wp_error($terms)) {
+                                    $term_names = wp_list_pluck($terms, 'name');
+                                    $output .= "- " . $tax->labels->name . ": " . implode(', ', $term_names) . "\n";
                                 }
                             }
                         }
@@ -437,6 +452,12 @@ class LLMS_Generator
             if (defined('WP_CLI') && WP_CLI) {
                 \WP_CLI::log('End generate detailed content');
             }
+        }
+
+        $settings = apply_filters('get_llms_generator_settings', []);
+        if (isset($settings['llms_end_file_description']) && $settings['llms_end_file_description']) {
+            $this->write_file(mb_convert_encoding('> ' . $settings['llms_end_file_description'] . "\n\n", 'UTF-8', 'UTF-8'));
+            $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'UTF-8'));
         }
     }
 
@@ -523,22 +544,30 @@ class LLMS_Generator
         }
 
         $table = $wpdb->prefix . 'llms_txt_cache';
-        $overview = '';
         $price = '';
         $sku = '';
 
         $permalink = get_permalink($post->ID);
 
-        $description = $this->get_post_meta_description( $post );
-        if (!$description) {
-            $fallback_content = $this->remove_shortcodes(apply_filters( 'get_the_excerpt', $post->post_excerpt, $post ) ?: get_the_content(null, false, $post));
-            $fallback_content = $this->content_cleaner->clean($fallback_content);
-            $description = wp_trim_words(strip_tags($fallback_content), 20, '...');
-            if($description) {
-                $overview = sprintf("- [%s](%s): %s\n", $post->post_title, $permalink, preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $description));
+        $description = $this->settings['include_excerpts'] ? $this->get_post_meta_description( $post ) : '';
+        $markdown = '';
+        if ( !empty( $this->settings['include_md_file'] ) && $this->settings['include_md_file'] ) {
+            $md_url = get_post_meta( $post->ID, '_md_url', true );
+            if ( ! empty( $md_url ) ) {
+                $markdown = " → [Markdown](" . esc_url( $md_url ) . ")";
             }
+        }
+
+        if (!$description) {
+            if($this->settings['include_excerpts']) {
+                $fallback_content = $this->remove_shortcodes(apply_filters( 'get_the_excerpt', $post->post_excerpt, $post ) ?: get_the_content(null, false, $post));
+                $fallback_content = $this->content_cleaner->clean($fallback_content);
+                $description = wp_trim_words(strip_tags($fallback_content), 20, '...');
+            }
+
+            $overview = sprintf("- [%s](%s)%s\n", $post->post_title, $permalink, $markdown . ($this->settings['include_excerpts'] && $description ? ': ' . preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $description) : ''));
         } else {
-            $overview = sprintf("- [%s](%s): %s\n", $post->post_title, $permalink, preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $description));
+            $overview = sprintf("- [%s](%s)%s\n", $post->post_title, $permalink, $markdown . ($this->settings['include_excerpts'] ? ': ' . preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $description) : ''));
         }
 
         if (isset($post->post_type) && $post->post_type === 'product') {

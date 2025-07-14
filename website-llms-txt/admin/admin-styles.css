@@ -48,12 +48,20 @@
 }
 
 .card-wrap {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
+    width: 100%;
+}
+
+@media (max-width: 800px) {
+    .card-wrap {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 600px) {
     .card-wrap {
-        flex-direction: column;
+        grid-template-columns: repeat(1, 1fr);
     }
 }

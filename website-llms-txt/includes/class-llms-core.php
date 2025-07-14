@@ -156,16 +156,24 @@ class LLMS_Core {
                     'llms_allow_indexing' => false,
                     'llms_local_log_enabled' => false,
                     'llms_global_telemetry_optin' => false,
+                    'include_md_file' => false,
+                    'llms_txt_title' => '',
+                    'llms_txt_description' => '',
+                    'llms_after_txt_description' => '',
+                    'llms_end_file_description' => ''
                 )
             )
         );
     }
 
     public function sanitize_settings($value) {
+        global $wpdb;
         if (!is_array($value)) {
             return array();
         }
         $clean = array();
+
+        $settings = $this->generator->get_llms_generator_settings();
         
         // Ensure post_types is an array and contains only valid post types
         $clean['post_types'] = array();
@@ -194,6 +202,20 @@ class LLMS_Core {
         $clean['noindex_header'] = !empty($value['noindex_header']);
         $clean['include_excerpts'] = !empty($value['include_excerpts']);
         $clean['include_taxonomies'] = !empty($value['include_taxonomies']);
+        $clean['llms_txt_title'] = $value['llms_txt_title'];
+        $clean['llms_txt_description'] = $value['llms_txt_description'];
+        $clean['llms_after_txt_description'] = $value['llms_after_txt_description'];
+        $clean['llms_end_file_description'] = $value['llms_end_file_description'];
+        $clean['include_md_file'] = !empty($value['include_md_file']);
+
+        if(
+            ($clean['include_excerpts'] != $settings['include_excerpts']) ||
+            ($clean['include_md_file'] != $settings['include_md_file']) ||
+            ($clean['include_meta'] != $settings['include_meta'])
+        ) {
+            $table_cache = $wpdb->prefix . 'llms_txt_cache';
+            $wpdb->query("TRUNCATE " . $table_cache);
+        }
 
         // Sanitize update frequency
         $clean['update_frequency'] = isset($value['update_frequency']) && 

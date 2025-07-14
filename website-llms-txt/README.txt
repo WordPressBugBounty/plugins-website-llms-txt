@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 7.1.6
+Stable tag: 8.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,17 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.0.0 =
+
+✨ New Features & Improvements: Admin UI, Content Options, Markdown
+
+• Rearranged admin dashboard: moved warning section and update frequency settings into an “Advanced Settings” card for better clarity.
+• Improved content settings: added checkboxes to control inclusion of post excerpts and meta descriptions in output, with cleaner fallback to just URL + Title when unchecked.
+• Added a dedicated “Custom LLMS.txt Content” panel in settings for defining a custom Title, Description, After Description, and End File Description.
+• Added custom description field and an additional manual entry field per page/post, both included in llms.txt.
+• Added support for attaching `.md` (Markdown) files per page/post — link to the file appears in llms.txt if enabled.
+• `.md` files are stored in a dedicated `/llms_md/` folder and linked in llms.txt for reference.
 
 = 7.1.6 =
 
@@ -987,3 +998,14 @@ These updates improve localization accuracy, content visibility logic, and metad
 • Improved compatibility with Yoast SEO & RankMath by checking settings arrays before use.
 • Enhanced fallback handling for missing meta descriptions and cleaned up fallback output in generated files.
 • Minor code refactoring for better PHP 8.2+ compatibility and reduced log noise.
+
+= 8.0.0 =
+
+✨ New Features & Improvements: Admin UI, Content Options, Markdown
+
+• Rearranged admin dashboard: moved warning section and update frequency settings into an “Advanced Settings” card for better clarity.
+• Improved content settings: added checkboxes to control inclusion of post excerpts and meta descriptions in output, with cleaner fallback to just URL + Title when unchecked.
+• Added a dedicated “Custom LLMS.txt Content” panel in settings for defining a custom Title, Description, After Description, and End File Description.
+• Added custom description field and an additional manual entry field per page/post, both included in llms.txt.
+• Added support for attaching `.md` (Markdown) files per page/post — link to the file appears in llms.txt if enabled.
+• `.md` files are stored in a dedicated `/llms_md/` folder and linked in llms.txt for reference.

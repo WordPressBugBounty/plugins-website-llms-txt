@@ -111,25 +111,6 @@ if (isset($_GET['settings-updated']) &&
                         }
                         ?>
                     </div>
-                    <h3><?php esc_html_e('Content Options', 'website-llms-txt'); ?></h3>
-                    <p>
-                        <label>
-                            <input type="checkbox" name="llms_generator_settings[noindex_header]" value="1" <?php checked( !empty($settings['noindex_header']) ); ?> />
-                            <?php esc_html_e('Disable “noindex” header for llms.txt', 'website-llms-txt'); ?>
-                        </label>
-                    </p>
-                    <p>
-                        <label>
-                            <?php printf(esc_html__('%1$s⚠️ Warning:%2$s Including %3$sllms.txt%4$s in your sitemap may lead to it being crawled and indexed by search engines like Google. If your file contains full post content, this could trigger duplicate content issues or filtering in search results. Use only if you understand the SEO impact.', 'website-llms-txt'),'<strong>','</strong>','<code>','</code>'); ?><br/><br/>
-                            <input
-                                type="checkbox"
-                                name="llms_generator_settings[llms_allow_indexing]"
-                                value="1"
-                                <?php checked(!empty($settings['llms_allow_indexing'])); ?>
-                            />
-                            <?php printf(esc_html__('%1$sI understand the SEO risks%2$s and want to include %3$sllms.txt%4$s in the sitemap', 'website-llms-txt'),'<strong>','</strong>','<code>','</code>'); ?></p>
-                        </label>
-                    </p>
                     <p>
                         <label>
                             <?php esc_html_e('Maximum posts per type:', 'website-llms-txt'); ?>
@@ -155,7 +136,7 @@ if (isset($_GET['settings-updated']) &&
                             <input type="checkbox"
                                    name="llms_generator_settings[include_meta]"
                                    value="1"
-                                   <?php checked(!empty($settings['include_meta'])); ?>>
+                                <?php checked(!empty($settings['include_meta'])); ?>>
                             <?php esc_html_e('Include meta information (publish date, author, etc.)', 'website-llms-txt'); ?>
                         </label>
                     </p>
@@ -164,7 +145,7 @@ if (isset($_GET['settings-updated']) &&
                             <input type="checkbox"
                                    name="llms_generator_settings[include_excerpts]"
                                    value="1"
-                                   <?php checked(!empty($settings['include_excerpts'])); ?>>
+                                <?php checked(!empty($settings['include_excerpts'])); ?>>
                             <?php esc_html_e('Include post excerpts', 'website-llms-txt'); ?>
                         </label>
                     </p>
@@ -173,8 +154,51 @@ if (isset($_GET['settings-updated']) &&
                             <input type="checkbox"
                                    name="llms_generator_settings[include_taxonomies]"
                                    value="1"
-                                   <?php checked(!empty($settings['include_taxonomies'])); ?>>
+                                <?php checked(!empty($settings['include_taxonomies'])); ?>>
                             <?php esc_html_e('Include taxonomies (categories, tags, etc.)', 'website-llms-txt'); ?>
+                        </label>
+                    </p>
+                    <?php if(!empty($settings)): ?>
+                        <?php foreach($settings as $key => $value): ?>
+                            <?php if(in_array($key, ['post_types', 'max_posts', 'max_words', 'include_meta', 'include_excerpts', 'include_taxonomies'])) continue ?>
+                            <?php if(is_array($value)): ?>
+                                <?php foreach($value as $second_key => $second_value): ?>
+                                    <input type="hidden" name="llms_generator_settings[<?= $key ?>][]" value="<?= $second_value ?>"/>
+                                <?php endforeach ?>
+                            <?php else: ?>
+                                <input type="hidden" name="llms_generator_settings[<?= $key ?>]" value="<?= $value ?>"/>
+                            <?php endif ?>
+                        <?php endforeach ?>
+                    <?php endif ?>
+                    <?php submit_button(esc_html__('Save Settings', 'website-llms-txt')); ?>
+                </form>
+            </div>
+            <div class="card">
+                <h2><?php esc_html_e('Advanced Settings', 'website-llms-txt'); ?></h2>
+                <form method="post" action="options.php" id="llms-settings-advanced-form">
+                    <?php settings_fields('llms_generator_settings'); ?>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="llms_generator_settings[include_md_file]" value="1" <?php checked( !empty($settings['include_md_file']) ); ?> />
+                            <?php esc_html_e('Include .md file links in LLMS.txt', 'website-llms-txt'); ?>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="llms_generator_settings[noindex_header]" value="1" <?php checked( !empty($settings['noindex_header']) ); ?> />
+                            <?php esc_html_e('Disable “noindex” header for llms.txt', 'website-llms-txt'); ?>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <?php printf(esc_html__('%1$s⚠️ Warning:%2$s Including %3$sllms.txt%4$s in your sitemap may lead to it being crawled and indexed by search engines like Google. If your file contains full post content, this could trigger duplicate content issues or filtering in search results. Use only if you understand the SEO impact.', 'website-llms-txt'),'<strong>','</strong>','<code>','</code>'); ?><br/><br/>
+                                <input
+                                    type="checkbox"
+                                    name="llms_generator_settings[llms_allow_indexing]"
+                                    value="1"
+                                    <?php checked(!empty($settings['llms_allow_indexing'])); ?>
+                                />
+                            <?php printf(esc_html__('%1$sI understand the SEO risks%2$s and want to include %3$sllms.txt%4$s in the sitemap', 'website-llms-txt'),'<strong>','</strong>','<code>','</code>'); ?>
                         </label>
                     </p>
                     <h3><?php esc_html_e('Update Frequency', 'website-llms-txt'); ?></h3>
@@ -195,7 +219,7 @@ if (isset($_GET['settings-updated']) &&
                     </p>
                     <?php if(!empty($settings)): ?>
                         <?php foreach($settings as $key => $value): ?>
-                            <?php if(!in_array($key, ['llms_local_log_enabled'])) continue ?>
+                            <?php if(in_array($key, ['include_md_file', 'noindex_header', 'llms_allow_indexing', 'update_frequency'])) continue ?>
                             <?php if(is_array($value)): ?>
                                 <?php foreach($value as $second_key => $second_value): ?>
                                     <input type="hidden" name="llms_generator_settings[<?= $key ?>][]" value="<?= $second_value ?>"/>
@@ -227,8 +251,53 @@ if (isset($_GET['settings-updated']) &&
                 </form>
             </div>
         </div>
+        <div class="card-column">
+            <div class="card">
+                <h2><?php esc_html_e('Custom LLMS.txt Content', 'website-llms-txt'); ?></h2>
+                <form method="post" action="options.php" id="llms-settings-custom-form">
+                    <?php settings_fields('llms_generator_settings'); ?>
+                    <p>
+                        <label>
+                            <?php esc_html_e('LLMS.txt Title', 'website-llms-txt'); ?>
+                        </label><br/>
+                        <textarea name="llms_generator_settings[llms_txt_title]" style="width: 100%;height: 40px;"><?php echo (isset($settings['llms_txt_title']) ? $settings['llms_txt_title'] : '') ?></textarea>
+                    </p>
+                    <p>
+                        <label>
+                            <?php esc_html_e('LLMS.txt Description', 'website-llms-txt'); ?>
+                        </label><br/>
+                        <textarea name="llms_generator_settings[llms_txt_description]" style="width: 100%;height: 80px;"><?php echo (isset($settings['llms_txt_description']) ? $settings['llms_txt_description'] : '') ?></textarea>
+                    </p>
+                    <p>
+                        <label>
+                            <?php esc_html_e('LLMS.txt After Description', 'website-llms-txt'); ?>
+                        </label><br/>
+                        <textarea name="llms_generator_settings[llms_after_txt_description]" style="width: 100%;height: 80px;"><?php echo (isset($settings['llms_after_txt_description']) ? $settings['llms_after_txt_description'] : '') ?></textarea>
+                    </p>
+                    <p>
+                        <label>
+                            <?php esc_html_e('LLMS.txt End File Description', 'website-llms-txt'); ?>
+                        </label><br/>
+                        <textarea name="llms_generator_settings[llms_end_file_description]" style="width: 100%;height: 80px;"><?php echo (isset($settings['llms_end_file_description']) ? $settings['llms_end_file_description'] : '') ?></textarea>
+                    </p>
+                    <?php if(!empty($settings)): ?>
+                        <?php foreach($settings as $key => $value): ?>
+                            <?php if(in_array($key, ['llms_txt_title', 'llms_txt_description', 'llms_after_txt_description', 'llms_end_file_description'])) continue ?>
+                            <?php if(is_array($value)): ?>
+                                <?php foreach($value as $second_key => $second_value): ?>
+                                    <input type="hidden" name="llms_generator_settings[<?= $key ?>][]" value="<?= $second_value ?>"/>
+                                <?php endforeach ?>
+                            <?php else: ?>
+                                <input type="hidden" name="llms_generator_settings[<?= $key ?>]" value="<?= $value ?>"/>
+                            <?php endif ?>
+                        <?php endforeach ?>
+                    <?php endif ?>
+                    <?php submit_button(esc_html__('Save Settings', 'website-llms-txt')); ?>
+                </form>
+            </div>
+        </div>
         <?php
-        $tab = filter_input(INPUT_GET,'tab');
+            $tab = filter_input(INPUT_GET,'tab');
         ?>
         <div class="card-column">
             <div class="card <?php echo $tab; ?>">
