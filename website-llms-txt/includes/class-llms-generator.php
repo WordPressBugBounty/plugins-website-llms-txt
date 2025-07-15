@@ -566,7 +566,8 @@ class LLMS_Generator
 
         $description = $this->settings['include_excerpts'] ? $this->get_post_meta_description( $post ) : '';
         $markdown = '';
-        if ( !empty( $this->settings['include_md_file'] ) && $this->settings['include_md_file'] ) {
+        $md_toggle = get_post_meta( $post->ID, '_llmstxt_page_md', true );
+        if ( !$md_toggle ) {
             $md_url = get_post_meta( $post->ID, '_md_url', true );
             if ( ! empty( $md_url ) ) {
                 $markdown = " → [Markdown](" . esc_url( $md_url ) . ")";

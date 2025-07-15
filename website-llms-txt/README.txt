@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.0.1
+Stable tag: 8.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,16 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.0.2 =
+
+✨ UI & Page-Level Control: Sidebar Meta Box & Exclusion Option
+
+• Moved the Markdown (.md) file meta box to the sidebar of the page/post edit screen for a cleaner and more consistent experience.
+• Added a “Do not include this page in llms.txt” checkbox at the page level to allow excluding individual pages/posts from llms.txt output.
+• Updated the meta box to include: llms.txt heading, .md upload field, and the new exclusion checkbox — all neatly organized.
+• Ensured the exclusion setting and uploaded .md file are saved correctly and reflected in llms.txt.
+• Minor UI polishing and accessibility improvements to align with WordPress admin styles.
 
 = 8.0.1 =
 
@@ -1025,3 +1035,13 @@ These updates improve localization accuracy, content visibility logic, and metad
 • Changed default behavior: options Include meta information (publish date, author, etc.), Include post excerpts, and Include taxonomies (categories, tags, etc.) are now unchecked by default for cleaner output.
 • Added a new option: Include detailed content — allowing fine-grained control over whether to include detailed page/post content in the llms.txt file.
 • Improved settings clarity and fallback behavior when all optional content is disabled.
+
+= 8.0.2 =
+
+✨ UI & Page-Level Control: Sidebar Meta Box & Exclusion Option
+
+• Moved the Markdown (.md) file meta box to the sidebar of the page/post edit screen for a cleaner and more consistent experience.
+• Added a “Do not include this page in llms.txt” checkbox at the page level to allow excluding individual pages/posts from llms.txt output.
+• Updated the meta box to include: llms.txt heading, .md upload field, and the new exclusion checkbox — all neatly organized.
+• Ensured the exclusion setting and uploaded .md file are saved correctly and reflected in llms.txt.
+• Minor UI polishing and accessibility improvements to align with WordPress admin styles.

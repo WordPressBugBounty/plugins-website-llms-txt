@@ -24,17 +24,69 @@ class LLMS_MD
     }
 
     public function add_meta_boxes() {
-        add_meta_box( 'md_upload', 'Markdown (.md) file', function ( $post ) {
-            $md_url = get_post_meta( $post->ID, '_md_url', true );
-            wp_nonce_field( 'save_md_file', 'md_file_nonce' );
-            ?>
-            <p><?php esc_html_e('Upload a .md file for this page/post.', 'website-llms-txt'); ?></p>
-            <input type="file" name="md_file">
-            <?php if ( $md_url ) : ?>
-                <p><?php esc_html_e('Current:', 'website-llms-txt'); ?> <a href="<?= esc_url( $md_url ) ?>" target="_blank"><?= basename( $md_url ) ?></a></p>
-            <?php endif; ?>
-            <?php
-        } );
+        $settings = apply_filters('get_llms_generator_settings', []);
+        if(isset($settings['include_md_file']) && $settings['include_md_file']) {
+            add_meta_box( 'md_upload', 'Markdown (.md) file', function ( $post ) {
+                $md_url = get_post_meta( $post->ID, '_md_url', true );
+                $md_toggle = get_post_meta( $post->ID, '_llmstxt_page_md', true );
+                wp_nonce_field( 'save_md_file', 'md_file_nonce' );
+                ?>
+                <label class="switch">
+                    <input type="checkbox" name="llmstxt-page-md" <?php checked( $md_toggle, 'yes' ); ?> />
+                    <span class="slider"></span>
+                    <?php esc_html_e('Do not include this page in llms.txt', 'website-llms-txt'); ?>
+                </label>
+                <style>
+                    .switch {
+                        display: inline-flex;
+                        align-items: center;
+                        font-family: sans-serif;
+                        font-size: 14px;
+                        cursor: pointer;
+                        gap: 8px;
+                    }
+
+                    .switch input {
+                        display: none;
+                    }
+
+                    .slider {
+                        position: relative;
+                        width: 40px;
+                        height: 20px;
+                        background-color: #ccc;
+                        border-radius: 20px;
+                        transition: 0.4s;
+                    }
+
+                    .slider::before {
+                        content: "";
+                        position: absolute;
+                        left: 2px;
+                        top: 2px;
+                        width: 16px;
+                        height: 16px;
+                        background-color: #fff;
+                        border-radius: 50%;
+                        transition: 0.4s;
+                    }
+
+                    input:checked + .slider {
+                        background-color: #2271b1;
+                    }
+
+                    input:checked + .slider::before {
+                        transform: translateX(20px);
+                    }
+                </style>
+                <p><?php esc_html_e('Upload a .md file for this page/post.', 'website-llms-txt'); ?></p>
+                <input type="file" name="md_file">
+                <?php if ( $md_url ) : ?>
+                    <p><?php esc_html_e('Current:', 'website-llms-txt'); ?> <a href="<?= esc_url( $md_url ) ?>" target="_blank"><?= basename( $md_url ) ?></a></p>
+                <?php endif; ?>
+                <?php
+            },null,'side' );
+        }
     }
 
     public function save_post( $post_id ) {
@@ -44,6 +96,12 @@ class LLMS_MD
 
         if ( ! isset( $_POST['md_file_nonce'] ) || ! wp_verify_nonce( $_POST['md_file_nonce'], 'save_md_file' ) ) {
             return;
+        }
+
+        if ( isset( $_POST['llmstxt-page-md'] ) ) {
+            update_post_meta( $post_id, '_llmstxt_page_md', 'yes' );
+        } else {
+            delete_post_meta( $post_id, '_llmstxt_page_md' );
         }
 
         if ( isset( $_FILES['md_file'] ) && ! empty( $_FILES['md_file']['tmp_name'] ) ) {
