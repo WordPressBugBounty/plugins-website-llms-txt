@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.0.2
+Stable tag: 8.0.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,12 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.0.3 =
+
+🐞 Minor Fix: Meta Box Title
+
+• Renamed the page/post meta box title from “Markdown (.md) file” to “Llms.txt” for better clarity and consistency with the feature’s purpose.
 
 = 8.0.2 =
 
@@ -1045,3 +1051,9 @@ These updates improve localization accuracy, content visibility logic, and metad
 • Updated the meta box to include: llms.txt heading, .md upload field, and the new exclusion checkbox — all neatly organized.
 • Ensured the exclusion setting and uploaded .md file are saved correctly and reflected in llms.txt.
 • Minor UI polishing and accessibility improvements to align with WordPress admin styles.
+
+= 8.0.3 =
+
+🐞 Minor Fix: Meta Box Title
+
+• Renamed the page/post meta box title from “Markdown (.md) file” to “Llms.txt” for better clarity and consistency with the feature’s purpose.

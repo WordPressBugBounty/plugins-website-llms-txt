@@ -26,7 +26,7 @@ class LLMS_MD
     public function add_meta_boxes() {
         $settings = apply_filters('get_llms_generator_settings', []);
         if(isset($settings['include_md_file']) && $settings['include_md_file']) {
-            add_meta_box( 'md_upload', 'Markdown (.md) file', function ( $post ) {
+            add_meta_box( 'md_upload', 'Llms.txt', function ( $post ) {
                 $md_url = get_post_meta( $post->ID, '_md_url', true );
                 $md_toggle = get_post_meta( $post->ID, '_llmstxt_page_md', true );
                 wp_nonce_field( 'save_md_file', 'md_file_nonce' );
