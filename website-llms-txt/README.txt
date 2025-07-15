@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.0.3
+Stable tag: 8.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,14 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.0.4 =
+
+🐞 Bug Fixes & i18n Improvements
+
+• Fixed internationalization (i18n) issue in the meta box: wrapped the meta box title in __() for proper translation support (thanks to Alex Lion for the report).
+• Fixed PHP warnings about undefined array keys (llms_txt_title, llms_txt_description, llms_after_txt_description, llms_end_file_description, include_md_file, detailed_content) by adding proper defaults and safe checks when saving settings.
+• Minor code cleanup to improve stability and compatibility.
 
 = 8.0.3 =
 
@@ -1057,3 +1065,11 @@ These updates improve localization accuracy, content visibility logic, and metad
 🐞 Minor Fix: Meta Box Title
 
 • Renamed the page/post meta box title from “Markdown (.md) file” to “Llms.txt” for better clarity and consistency with the feature’s purpose.
+
+= 8.0.4 =
+
+🐞 Bug Fixes & i18n Improvements
+
+• Fixed internationalization (i18n) issue in the meta box: wrapped the meta box title in __() for proper translation support (thanks to Alex Lion for the report).
+• Fixed PHP warnings about undefined array keys (llms_txt_title, llms_txt_description, llms_after_txt_description, llms_end_file_description, include_md_file, detailed_content) by adding proper defaults and safe checks when saving settings.
+• Minor code cleanup to improve stability and compatibility.

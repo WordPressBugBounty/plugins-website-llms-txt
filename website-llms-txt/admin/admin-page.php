@@ -189,7 +189,7 @@ if (isset($_GET['settings-updated']) &&
                     <p>
                         <label>
                             <input type="checkbox" name="llms_generator_settings[include_md_file]" value="1" <?php checked( !empty($settings['include_md_file']) ); ?> />
-                            <?php esc_html_e('Turn on options at the page level admin with .md support and ability to no include individual pages', 'website-llms-txt'); ?>
+                            <?php esc_html_e('Turn on options at the page level admin with .md support and ability to not include individual pages', 'website-llms-txt'); ?>
                         </label>
                     </p>
                     <p>

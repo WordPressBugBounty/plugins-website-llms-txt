@@ -203,10 +203,10 @@ class LLMS_Core {
         $clean['noindex_header'] = !empty($value['noindex_header']);
         $clean['include_excerpts'] = !empty($value['include_excerpts']);
         $clean['include_taxonomies'] = !empty($value['include_taxonomies']);
-        $clean['llms_txt_title'] = $value['llms_txt_title'];
-        $clean['llms_txt_description'] = $value['llms_txt_description'];
-        $clean['llms_after_txt_description'] = $value['llms_after_txt_description'];
-        $clean['llms_end_file_description'] = $value['llms_end_file_description'];
+        $clean['llms_txt_title'] = !isset($value['llms_txt_title']) ? '' : $value['llms_txt_title'];
+        $clean['llms_txt_description'] = !isset($value['llms_txt_description']) ? '' : $value['llms_txt_description'];
+        $clean['llms_after_txt_description'] = !isset($value['llms_after_txt_description']) ? '' : $value['llms_after_txt_description'];
+        $clean['llms_end_file_description'] = !isset($value['llms_end_file_description']) ? '' : $value['llms_end_file_description'];
         $clean['include_md_file'] = !empty($value['include_md_file']);
         $clean['detailed_content'] = !empty($value['detailed_content']);
 
