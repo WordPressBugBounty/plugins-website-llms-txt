@@ -567,11 +567,10 @@ class LLMS_Generator
         $description = $this->settings['include_excerpts'] ? $this->get_post_meta_description( $post ) : '';
         $markdown = '';
         $md_toggle = get_post_meta( $post->ID, '_llmstxt_page_md', true );
-        if ( !$md_toggle ) {
-            $md_url = get_post_meta( $post->ID, '_md_url', true );
-            if ( ! empty( $md_url ) ) {
-                $markdown = " → [Markdown](" . esc_url( $md_url ) . ")";
-            }
+
+        $md_url = get_post_meta( $post->ID, '_md_url', true );
+        if ( ! empty( $md_url ) ) {
+            $markdown = " → [Markdown](" . esc_url( $md_url ) . ")";
         }
 
         if (!$description) {
@@ -635,6 +634,10 @@ class LLMS_Generator
         ob_start();
         echo $this->content_cleaner->clean($this->remove_emojis( $this->remove_shortcodes(do_shortcode(get_the_content(null, false, $post)))));
         $content = ob_get_clean();
+
+        if ( $md_toggle ) {
+            $show = 0;
+        }
 
         $wpdb->replace(
             $table,

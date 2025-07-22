@@ -84,6 +84,11 @@ class LLMS_MD
                 <?php if ( $md_url ) : ?>
                     <p><?php esc_html_e('Current:', 'website-llms-txt'); ?> <a href="<?= esc_url( $md_url ) ?>" target="_blank"><?= basename( $md_url ) ?></a></p>
                 <?php endif; ?>
+                <?php if($md_url): ?>
+                    <button type="submit" name="delete_md_file" value="1" class="button button-secondary">
+                        Delete file
+                    </button>
+                <?php endif; ?>
                 <?php
             },null,'side' );
         }
@@ -104,6 +109,20 @@ class LLMS_MD
             delete_post_meta( $post_id, '_llmstxt_page_md' );
         }
 
+        if ( isset( $_POST['delete_md_file'] ) && $_POST['delete_md_file'] == '1' ) {
+
+            $md_url = get_post_meta( $post_id, '_md_url', true );
+            if ( $md_url ) {
+                $md_path = $this->get_path_from_url( $md_url );
+                if ( file_exists( $md_path ) ) {
+                    unlink( $md_path );
+                }
+                delete_post_meta( $post_id, '_md_url' );
+            }
+
+            return;
+        }
+
         if ( isset( $_FILES['md_file'] ) && ! empty( $_FILES['md_file']['tmp_name'] ) ) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
 
@@ -116,6 +135,19 @@ class LLMS_MD
                 update_post_meta( $post_id, '_md_url', esc_url_raw( $uploaded['url'] ) );
             }
         }
+    }
+
+    private function get_path_from_url( $url ) {
+        $upload_dir = wp_upload_dir();
+        $base_url   = $upload_dir['baseurl'];
+        $base_dir   = $upload_dir['basedir'];
+
+        if ( strpos( $url, $base_url ) !== false ) {
+            $relative_path = str_replace( $base_url, '', $url );
+            return $base_dir . $relative_path;
+        }
+
+        return false;
     }
 
     public function llms_md_upload_dir( $dirs ) {
