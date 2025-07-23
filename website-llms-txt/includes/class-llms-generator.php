@@ -138,7 +138,7 @@ class LLMS_Generator
             $this->llms_name = parse_url($siteurl)['host'];
         }
 
-        if ($this->settings['update_frequency'] !== 'immediate') {
+        if (isset($this->settings['update_frequency']) && $this->settings['update_frequency'] !== 'immediate') {
             do_action('schedule_updates');
         }
 
@@ -354,7 +354,7 @@ class LLMS_Generator
             \WP_CLI::log('Start generate detailed content');
         }
 
-        if($this->settings['detailed_content'] || $this->settings['include_excerpts'] || $this->settings['include_taxonomies'] || $this->settings['include_meta']) {
+        if(isset($this->settings['detailed_content']) && $this->settings['detailed_content'] || isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] || isset($this->settings['include_taxonomies']) && $this->settings['include_taxonomies'] || isset($this->settings['include_meta']) && $this->settings['include_meta']) {
             $output = "#\n" . "# Detailed Content\n\n";
             $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
         }
@@ -364,7 +364,7 @@ class LLMS_Generator
         foreach ($this->settings['post_types'] as $post_type) {
             if ($post_type === 'llms_txt') continue;
 
-            if($this->settings['detailed_content'] || $this->settings['include_excerpts'] || $this->settings['include_taxonomies'] || $this->settings['include_meta']) {
+            if(isset($this->settings['detailed_content']) && $this->settings['detailed_content'] || isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] || isset($this->settings['include_taxonomies']) && $this->settings['include_taxonomies'] || isset($this->settings['include_meta']) && $this->settings['include_meta']) {
                 $post_type_obj = get_post_type_object($post_type);
                 if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
                     $output = "\n## " . $post_type_obj->labels->name . "\n\n";
@@ -398,7 +398,7 @@ class LLMS_Generator
                             break;
                         }
 
-                        if ($this->settings['include_meta']) {
+                        if (isset($this->settings['include_meta']) && $this->settings['include_meta']) {
                             if ($data->meta) {
                                 $output .= "> " . wp_trim_words($data->meta, $this->settings['max_words'] ?? 250, '...') . "\n\n";
                             }
@@ -416,7 +416,7 @@ class LLMS_Generator
                             }
                         }
 
-                        if ($this->settings['include_taxonomies']) {
+                        if (isset($this->settings['include_taxonomies']) && $this->settings['include_taxonomies']) {
                             $taxonomies = get_object_taxonomies($data->type, 'objects');
                             foreach ($taxonomies as $tax) {
                                 $terms = get_the_terms($data->post_id, $tax->name);
@@ -428,13 +428,13 @@ class LLMS_Generator
                         }
 
                         $content = '';
-                        if ($this->settings['detailed_content']) {
+                        if (isset($this->settings['detailed_content']) && $this->settings['detailed_content']) {
                             $content = wp_trim_words($data->content, $this->settings['max_words'] ?? 250, '...');
                             $output .= "\n";
                         }
 
 
-                        if ($this->settings['include_excerpts'] && $data->excerpts) {
+                        if (isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] && $data->excerpts) {
                             $output .= $data->excerpts . "\n\n";
                         }
 
@@ -442,7 +442,7 @@ class LLMS_Generator
                             $output .= $content . "\n\n";
                         }
 
-                        if($this->settings['detailed_content'] || $this->settings['include_excerpts'] || $this->settings['include_taxonomies'] || $this->settings['include_meta']) {
+                        if(isset($this->settings['detailed_content']) && $this->settings['detailed_content'] || isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] || isset($this->settings['include_taxonomies']) && $this->settings['include_taxonomies'] || isset($this->settings['include_meta']) && $this->settings['include_meta']) {
                             $output .= "---\n\n";
                         }
                         unset($data);
@@ -451,7 +451,7 @@ class LLMS_Generator
                     }
                 }
 
-                if($this->settings['detailed_content'] || $this->settings['include_excerpts'] || $this->settings['include_taxonomies'] || $this->settings['include_meta']) {
+                if(isset($this->settings['detailed_content']) && $this->settings['detailed_content'] || isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] || isset($this->settings['include_taxonomies']) && $this->settings['include_taxonomies'] || isset($this->settings['include_meta']) && $this->settings['include_meta']) {
                     $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
                 }
                 unset($output);
@@ -460,7 +460,7 @@ class LLMS_Generator
 
             } while (!empty($posts) && !$exit);
 
-            if($this->settings['detailed_content'] || $this->settings['include_excerpts'] || $this->settings['include_taxonomies'] || $this->settings['include_meta']) {
+            if(isset($this->settings['detailed_content']) && $this->settings['detailed_content'] || isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] || isset($this->settings['include_taxonomies']) && $this->settings['include_taxonomies'] || isset($this->settings['include_meta']) && $this->settings['include_meta']) {
                 $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'UTF-8'));
             }
 
@@ -564,7 +564,7 @@ class LLMS_Generator
 
         $permalink = get_permalink($post->ID);
 
-        $description = $this->settings['include_excerpts'] ? $this->get_post_meta_description( $post ) : '';
+        $description = isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] ? $this->get_post_meta_description( $post ) : '';
         $markdown = '';
         $md_toggle = get_post_meta( $post->ID, '_llmstxt_page_md', true );
 

@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.0.5
+Stable tag: 8.0.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,13 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.0.6 =
+
+🐞 Bug Fixes
+
+• Fixed PHP warnings about undefined array key detailed_content in class-llms-generator.php when running cron from WP CLI.
+• Added additional checks and defaults to prevent warnings in environments where detailed_content is not set.
 
 = 8.0.5 =
 
@@ -1087,3 +1094,10 @@ These updates improve localization accuracy, content visibility logic, and metad
 
 • Added support for deleting the uploaded .md file directly from the meta box.
 • Fixed the behavior of the “Do not include this page in llms.txt” checkbox — now, when activated, the page is correctly excluded from the generated llms.txt file.
+
+= 8.0.6 =
+
+🐞 Bug Fixes
+
+• Fixed PHP warnings about undefined array key detailed_content in class-llms-generator.php when running cron from WP CLI.
+• Added additional checks and defaults to prevent warnings in environments where detailed_content is not set.
