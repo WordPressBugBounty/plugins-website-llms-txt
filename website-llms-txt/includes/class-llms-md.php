@@ -86,7 +86,7 @@ class LLMS_MD
                 <?php endif; ?>
                 <?php if($md_url): ?>
                     <button type="submit" name="delete_md_file" value="1" class="button button-secondary">
-                        Delete file
+                        <?php esc_html_e('Delete file', 'website-llms-txt'); ?>
                     </button>
                 <?php endif; ?>
                 <?php

@@ -632,7 +632,7 @@ class LLMS_Generator
 
         $excerpts = $this->remove_shortcodes($post->post_excerpt);
         ob_start();
-        echo $this->content_cleaner->clean($this->remove_emojis( $this->remove_shortcodes(do_shortcode(get_the_content(null, false, $post)))));
+            echo $this->content_cleaner->clean($this->remove_emojis( $this->remove_shortcodes(do_shortcode(get_the_content(null, false, $post)))));
         $content = ob_get_clean();
 
         if ( $md_toggle ) {
