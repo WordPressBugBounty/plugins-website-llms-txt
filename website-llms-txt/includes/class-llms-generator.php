@@ -1,4 +1,8 @@
 <?php
+
+use RankMath\Helper;
+use RankMath\Paper\Paper;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -611,8 +615,14 @@ class LLMS_Generator
             }
         }
 
+        $title = $post->post_title;
+
         if ($use_rankmath) {
+            rank_math()->variables->setup();
             $robots_noindex = get_post_meta($post_id, 'rank_math_robots', true);
+            $rank_math_title = get_post_meta($post_id, 'rank_math_title', true);
+            $title = Helper::replace_vars( $rank_math_title, $post );
+
             if(is_array($robots_noindex) && (in_array('nofollow', $robots_noindex) || in_array('noindex', $robots_noindex))) {
                 $show = 0;
             }
@@ -646,7 +656,7 @@ class LLMS_Generator
                 'show' => $show,
                 'status' => $post->post_status,
                 'type' => $post->post_type,
-                'title' => $post->post_title,
+                'title' => $title,
                 'link' => $permalink,
                 'sku' => $sku,
                 'price' => $price,

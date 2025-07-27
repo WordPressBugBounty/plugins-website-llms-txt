@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.0.7
+Stable tag: 8.0.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,13 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.0.8 =
+
+🛠️ SEO Compatibility Fixes
+
+• Fixed an issue where Rank Math dynamic tags (e.g. %title%, %customterm(something)%) were not being rendered in llms.txt titles and descriptions.
+• Dynamic SEO meta data now resolves correctly for all post types when using templates from Rank Math.
 
 = 8.0.7 =
 
@@ -1115,3 +1122,10 @@ These updates improve localization accuracy, content visibility logic, and metad
 
 • Fixed localization issue in class-llms-md.php: the “Delete file” button label is now correctly translatable using esc_html_e() with the proper text domain.
 • Ensured all static strings in UI components follow internationalization best practices.
+
+= 8.0.8 =
+
+🛠️ SEO Compatibility Fixes
+
+• Fixed an issue where Rank Math dynamic tags (e.g. %title%, %customterm(something)%) were not being rendered in llms.txt titles and descriptions.
+• Dynamic SEO meta data now resolves correctly for all post types when using templates from Rank Math.
