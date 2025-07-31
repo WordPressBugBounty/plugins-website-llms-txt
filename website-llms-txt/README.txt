@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.0.8
+Stable tag: 8.0.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,13 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.0.9 =
+
+🌐 WPML URL Generation Fix
+
+• Fixed an issue where llms.txt was generating duplicate URLs with the same language code for all translations.
+• Each URL is now generated correctly according to its respective language version in multilingual setups using WPML.
 
 = 8.0.8 =
 
@@ -1129,3 +1136,10 @@ These updates improve localization accuracy, content visibility logic, and metad
 
 • Fixed an issue where Rank Math dynamic tags (e.g. %title%, %customterm(something)%) were not being rendered in llms.txt titles and descriptions.
 • Dynamic SEO meta data now resolves correctly for all post types when using templates from Rank Math.
+
+= 8.0.9 =
+
+🌐 WPML URL Generation Fix
+
+• Fixed an issue where llms.txt was generating duplicate URLs with the same language code for all translations.
+• Each URL is now generated correctly according to its respective language version in multilingual setups using WPML.

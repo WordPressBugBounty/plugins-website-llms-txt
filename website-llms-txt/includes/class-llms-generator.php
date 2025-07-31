@@ -213,7 +213,20 @@ class LLMS_Generator
                     foreach ($posts as $cache_post) {
                         if(!$cache_post->post_id) {
                             $post = get_post($cache_post->ID);
+                            if(function_exists('wpml_object_id_filter')) {
+                                $lang = apply_filters('wpml_element_language_code', null, [
+                                    'element_id' => $post->ID,
+                                    'element_type' => 'post_' . $post->post_type
+                                ]);
+
+                                if ($lang) {
+                                    do_action('wpml_switch_language', $lang);
+                                }
+                            }
                             $this->handle_post_update($cache_post->ID, $post, 'manual');
+                            if(function_exists('wpml_object_id_filter')) {
+                                wp_reset_postdata();
+                            }
                             unset($post);
                         }
                     }
@@ -221,6 +234,10 @@ class LLMS_Generator
 
                 $offset = $offset + $this->limit;
             } while (!empty($posts));
+
+            if(function_exists('wpml_object_id_filter')) {
+                do_action('wpml_switch_language', apply_filters('wpml_default_language', null));
+            }
 
             unset($posts);
 
