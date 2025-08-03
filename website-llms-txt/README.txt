@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.0.9
+Stable tag: 8.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,13 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.1.0 =
+
+🛠 Fix: 404 Error on llms-sitemap.xml with Yoast SEO
+
+• Resolved an issue where the llms-sitemap.xml endpoint returned a 404 error when Yoast SEO was active.
+• The sitemap rewrite rule is now properly registered and recognized, ensuring the sitemap is accessible alongside Yoast’s sitemaps.
 
 = 8.0.9 =
 
@@ -1143,3 +1150,10 @@ These updates improve localization accuracy, content visibility logic, and metad
 
 • Fixed an issue where llms.txt was generating duplicate URLs with the same language code for all translations.
 • Each URL is now generated correctly according to its respective language version in multilingual setups using WPML.
+
+= 8.1.0 =
+
+🛠 Fix: 404 Error on llms-sitemap.xml with Yoast SEO
+
+• Resolved an issue where the llms-sitemap.xml endpoint returned a 404 error when Yoast SEO was active.
+• The sitemap rewrite rule is now properly registered and recognized, ensuring the sitemap is accessible alongside Yoast’s sitemaps.
