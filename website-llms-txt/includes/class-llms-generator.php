@@ -15,9 +15,11 @@ class LLMS_Generator
     private $content_cleaner;
     private $wp_filesystem;
     private $llms_path;
-    private $write_log;
+    private $write_log_path;
     private $llms_name;
     private $limit = 500;
+    // New property for temporary file path
+    private $temp_llms_path;
 
     public function __construct()
     {
@@ -152,16 +154,41 @@ class LLMS_Generator
         }
     }
 
+    /**
+     * Writes the content to a log file using WP_Filesystem.
+     *
+     * @param string $content Content for recording.
+     */
     private function write_log($content)
     {
-        if (!$this->write_log) {
-            $upload_dir = wp_upload_dir();
-            $this->write_log = $upload_dir['basedir'] . '/log.txt';
+        if (!$this->wp_filesystem) {
+            $this->init_filesystem();
         }
 
-        file_put_contents($this->write_log, $content, FILE_APPEND | LOCK_EX);
+        if ($this->wp_filesystem) {
+            if (!$this->write_log_path) {
+                $upload_dir = wp_upload_dir();
+                $this->write_log_path = $upload_dir['basedir'] . '/log.txt';
+            }
+
+            // Use append mode if supported, otherwise read, append and write.
+            // For log, it's less critical for memory as logs generally don't become *that* large
+            // and frequent reads/writes are less performance sensitive than the main LLMS file.
+            if ($this->wp_filesystem->exists($this->write_log_path)) {
+                $current_content = $this->wp_filesystem->get_contents($this->write_log_path);
+                $this->wp_filesystem->put_contents($this->write_log_path, $current_content . $content, FS_CHMOD_FILE);
+            } else {
+                $this->wp_filesystem->put_contents($this->write_log_path, $content, FS_CHMOD_FILE);
+            }
+        }
     }
 
+    /**
+     * Writes the content to an LLMS file using WP_Filesystem,
+     * with an optimized approach for large files.
+     *
+     * @param string $content Content for recording.
+     */
     private function write_file($content)
     {
         if (!$this->wp_filesystem) {
@@ -169,21 +196,53 @@ class LLMS_Generator
         }
 
         if ($this->wp_filesystem) {
-            if (!$this->llms_path) {
+            if (!$this->temp_llms_path) {
                 $upload_dir = wp_upload_dir();
-                $this->llms_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
+                $this->temp_llms_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.temp.llms.txt';
             }
 
-            file_put_contents($this->llms_path, (string)$content, FILE_APPEND | LOCK_EX);
+            // Attempt to write using native PHP functions if direct method is available
+            // This is more memory efficient for large files as it appends without reading the whole file
+            if ($this->wp_filesystem->method == 'direct') {
+                $file_handle = @fopen($this->temp_llms_path, 'a'); // 'a' for append mode, creates file if it doesn't exist
+                if ($file_handle) {
+                    @fwrite($file_handle, (string)$content);
+                    @fclose($file_handle);
+                    // Set permissions as fopen doesn't handle them
+                    $this->wp_filesystem->chmod($this->temp_llms_path, FS_CHMOD_FILE, false);
+                } else {
+                    // Fallback to WP_Filesystem's put_contents if fopen fails (e.g., permissions)
+                    if ($this->wp_filesystem->exists($this->temp_llms_path)) {
+                        $current_content = $this->wp_filesystem->get_contents($this->temp_llms_path);
+                        $this->wp_filesystem->put_contents($this->temp_llms_path, $current_content . (string)$content, FS_CHMOD_FILE);
+                    } else {
+                        $this->wp_filesystem->put_contents($this->temp_llms_path, (string)$content, FS_CHMOD_FILE);
+                    }
+                }
+            } else {
+                // If not direct method, use WP_Filesystem's put_contents (which involves read+write for append)
+                // This will still have memory issues for extremely large files, but is the only option for non-direct methods.
+                if ($this->wp_filesystem->exists($this->temp_llms_path)) {
+                    $current_content = $this->wp_filesystem->get_contents($this->temp_llms_path);
+                    $this->wp_filesystem->put_contents($this->temp_llms_path, $current_content . (string)$content, FS_CHMOD_FILE);
+                } else {
+                    $this->wp_filesystem->put_contents($this->temp_llms_path, (string)$content, FS_CHMOD_FILE);
+                }
+            }
         }
     }
 
     public function get_llms_content($content)
     {
+        if (!$this->wp_filesystem) {
+            $this->init_filesystem();
+        }
+
         $upload_dir = wp_upload_dir();
         $upload_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
-        if (file_exists($upload_path)) {
-            $content .= file_get_contents($upload_path);
+
+        if ($this->wp_filesystem && $this->wp_filesystem->exists($upload_path)) {
+            $content .= $this->wp_filesystem->get_contents($upload_path);
         }
         return $content;
     }
@@ -267,7 +326,7 @@ class LLMS_Generator
         }
         $slug = 'ai-sitemap';
         $existing_page = get_page_by_path( $slug );
-        $output = "\xEF\xBB\xBF";
+        $output = "\xEF\xBB\xBF"; // UTF-8 BOM
         if(is_a($existing_page,'WP_Post')) {
             $output .= "# Learn more:" . get_permalink($existing_page) . "\n\n";
         }
@@ -539,7 +598,7 @@ class LLMS_Generator
 
     private function get_post_meta_description( $post )
     {
-        if (class_exists('WPSEO_Meta')) {
+        if (function_exists('YoastSEO') && isset(YoastSEO()->meta, YoastSEO()->meta->for_post($post->ID)->description)) {
             return YoastSEO()->meta->for_post($post->ID)->description;
         } elseif (class_exists('RankMath')) {
             // Try using RankMath's helper class first
@@ -741,27 +800,38 @@ class LLMS_Generator
             \WP_CLI::log('Start');
         }
 
+        if (!$this->wp_filesystem) {
+            $this->init_filesystem();
+        }
+
         $upload_dir = wp_upload_dir();
-        $upload_path = $upload_dir['basedir'] . '/llms.txt';
-        if (file_exists($upload_path)) {
-            unlink($upload_path);
+        $old_upload_path = $upload_dir['basedir'] . '/llms.txt'; // Path for legacy file
+        $new_upload_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
+        $this->temp_llms_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.temp.llms.txt';
+
+        // Delete existing files using WP_Filesystem
+        if ($this->wp_filesystem->exists($old_upload_path)) {
+            $this->wp_filesystem->delete($old_upload_path);
+        }
+        if ($this->wp_filesystem->exists($new_upload_path)) {
+            $this->wp_filesystem->delete($new_upload_path);
+        }
+        // Ensure the temporary file is deleted before starting new generation
+        if ($this->wp_filesystem->exists($this->temp_llms_path)) {
+            $this->wp_filesystem->delete($this->temp_llms_path);
         }
 
-        $upload_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
-        if (file_exists($upload_path)) {
-            unlink($upload_path);
-        }
 
-        if(defined('FLYWHEEL_PLUGIN_DIR')) {
-            $file_path = dirname(ABSPATH) . 'www/' . 'llms.txt';
-            if (file_exists($file_path)) {
-                unlink($file_path);
-            }
+        $file_path = '';
+        if (defined('FLYWHEEL_PLUGIN_DIR')) {
+            $file_path = trailingslashit(dirname(ABSPATH)) . 'www/' . 'llms.txt';
         } else {
-            $file_path = ABSPATH . 'llms.txt';
-            if (file_exists($file_path)) {
-                unlink($file_path);
-            }
+            $file_path = trailingslashit(ABSPATH) . 'llms.txt';
+        }
+
+        // Delete existing root file using WP_Filesystem
+        if ($this->wp_filesystem->exists($file_path)) {
+            $this->wp_filesystem->delete($file_path);
         }
 
         $this->generate_content();
@@ -770,9 +840,19 @@ class LLMS_Generator
             \WP_CLI::log('End generate_content event');
         }
 
-        if ( ! is_multisite() ) {
-            if (file_exists($upload_path)) {
-                $this->wp_filesystem->copy($upload_path, $file_path, true);
+        if (!is_multisite()) {
+            // After generation, rename/move the temporary file to the final destination
+            if ($this->wp_filesystem->exists($this->temp_llms_path)) {
+                // Ensure the final destination file is removed before moving the temp file
+                if ($this->wp_filesystem->exists($new_upload_path)) {
+                    $this->wp_filesystem->delete($new_upload_path);
+                }
+                $this->wp_filesystem->move($this->temp_llms_path, $new_upload_path, true);
+
+                // Copy the generated file to the root directory if not multisite
+                if ($this->wp_filesystem->exists($new_upload_path)) {
+                    $this->wp_filesystem->copy($new_upload_path, $file_path, true);
+                }
             }
         }
 
@@ -795,7 +875,7 @@ class LLMS_Generator
         }
 
         if (defined('WP_CLI') && WP_CLI) {
-            \WP_CLI::log('Clear cache event');
+            \WP_CLI::log('Clear cache');
         }
 
         do_action('wpseo_cache_clear_sitemap');

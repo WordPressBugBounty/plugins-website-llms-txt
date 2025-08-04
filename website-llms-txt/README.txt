@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.1.0
+Stable tag: 8.1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,15 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.1.1 =
+
+🔧 Compatibility Fix: WordPress VIP Filesystem Support
+	•	Resolved an issue where the plugin could not write the llms.txt file on WordPress VIP environments due to the lack of stream_lock support.
+	•	Implemented fallback logic using WP_Filesystem:
+	•	If the direct method is available, the plugin now writes using native PHP file handles (fopen in append mode) for better performance and memory efficiency on large files.
+	•	Ensures compatibility with WordPress VIP’s restricted filesystem wrapper.
+	•	Improved error handling and logging when file writing is not possible due to server restrictions.
 
 = 8.1.0 =
 
@@ -1157,3 +1166,12 @@ These updates improve localization accuracy, content visibility logic, and metad
 
 • Resolved an issue where the llms-sitemap.xml endpoint returned a 404 error when Yoast SEO was active.
 • The sitemap rewrite rule is now properly registered and recognized, ensuring the sitemap is accessible alongside Yoast’s sitemaps.
+
+= 8.1.1 =
+
+🔧 Compatibility Fix: WordPress VIP Filesystem Support
+	•	Resolved an issue where the plugin could not write the llms.txt file on WordPress VIP environments due to the lack of stream_lock support.
+	•	Implemented fallback logic using WP_Filesystem:
+	•	If the direct method is available, the plugin now writes using native PHP file handles (fopen in append mode) for better performance and memory efficiency on large files.
+	•	Ensures compatibility with WordPress VIP’s restricted filesystem wrapper.
+	•	Improved error handling and logging when file writing is not possible due to server restrictions.
