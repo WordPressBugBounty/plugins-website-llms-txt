@@ -38,12 +38,26 @@ class LLMS_Core {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_notice_script'));
         add_action('wp_ajax_dismiss_llms_admin_notice', array($this, 'dismiss_llms_admin_notice'));
         add_action('wp_ajax_dismiss_llms_ai_banner_dismissed', array($this, 'dismiss_llms_ai_banner_dismissed'));
+        add_filter('redirect_canonical', array($this, 'redirect_canonical'), 10, 2);
     }
+
+    public function redirect_canonical($redirect_url, $requested_url)
+    {
+        $redirect = parse_url($redirect_url);
+        $ll_redirect_path = strtolower($redirect['path']);
+        if (str_contains($ll_redirect_path, 'llms')) {
+            return false;
+        }
+
+        return $redirect_url;
+    }
+
     public function dismiss_llms_ai_banner_dismissed() {
         check_ajax_referer('llms_dismiss_notice', 'nonce');
         update_user_meta(get_current_user_id(), 'llms_ai_banner_dismissed', 1);
         wp_send_json_success();
     }
+
     public function llms_ai_banner_dismissed() {
         if (get_user_meta(get_current_user_id(), 'llms_ai_banner_dismissed', true)) return;
         $how_it_works_url = admin_url('tools.php?page=llms-file-manager&tab=how-it-works');

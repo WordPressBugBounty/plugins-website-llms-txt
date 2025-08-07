@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.1.1
+Stable tag: 8.1.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,14 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.1.2 =
+
+🐛 Fix: Trailing Slash Redirect Issue on llms.txt and llms-full.txt
+	•	Resolved an issue where WordPress would incorrectly redirect requests for /llms.txt and /llms-full.txt due to trailing slash conflicts.
+	•	Implemented a filter-based override to prevent canonical redirection behavior for these endpoints.
+	•	Ensures proper file access and visibility across all permalink structures.
+	•	Inspired by and aligned with community solutions provided for similar plugin issues.
 
 = 8.1.1 =
 
@@ -1175,3 +1183,11 @@ These updates improve localization accuracy, content visibility logic, and metad
 	•	If the direct method is available, the plugin now writes using native PHP file handles (fopen in append mode) for better performance and memory efficiency on large files.
 	•	Ensures compatibility with WordPress VIP’s restricted filesystem wrapper.
 	•	Improved error handling and logging when file writing is not possible due to server restrictions.
+
+= 8.1.2 =
+
+🐛 Fix: Trailing Slash Redirect Issue on llms.txt and llms-full.txt
+	•	Resolved an issue where WordPress would incorrectly redirect requests for /llms.txt and /llms-full.txt due to trailing slash conflicts.
+	•	Implemented a filter-based override to prevent canonical redirection behavior for these endpoints.
+	•	Ensures proper file access and visibility across all permalink structures.
+	•	Inspired by and aligned with community solutions provided for similar plugin issues.
