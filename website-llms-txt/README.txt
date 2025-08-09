@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.1.2
+Stable tag: 8.1.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,17 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.1.3 =
+
+✨ New: Manual Generation Trigger for llms.txt
+    • Added a "Generate Now" option in the admin to manually trigger llms.txt file generation without waiting for scheduled cron jobs.
+    • Allows immediate regeneration for testing or urgent updates.
+
+🐛 Fix: WP Engine Root File Creation Issue
+    • Resolved an issue where llms.txt was generated in the uploads directory but not copied to the WordPress root on WP Engine-hosted sites.
+    • Improved file system handling to ensure compatibility with WP Engine’s direct FS method and restrictive environments.
+    • Includes fallback logic for reliable file movement and permission setting.
 
 = 8.1.2 =
 
@@ -1191,3 +1202,14 @@ These updates improve localization accuracy, content visibility logic, and metad
 	•	Implemented a filter-based override to prevent canonical redirection behavior for these endpoints.
 	•	Ensures proper file access and visibility across all permalink structures.
 	•	Inspired by and aligned with community solutions provided for similar plugin issues.
+
+= 8.1.3 =
+
+✨ New: Manual Generation Trigger for llms.txt
+    • Added a "Generate Now" option in the admin to manually trigger llms.txt file generation without waiting for scheduled cron jobs.
+    • Allows immediate regeneration for testing or urgent updates.
+
+🐛 Fix: WP Engine Root File Creation Issue
+    • Resolved an issue where llms.txt was generated in the uploads directory but not copied to the WordPress root on WP Engine-hosted sites.
+    • Improved file system handling to ensure compatibility with WP Engine’s direct FS method and restrictive environments.
+    • Includes fallback logic for reliable file movement and permission setting.

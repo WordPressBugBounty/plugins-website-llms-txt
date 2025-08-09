@@ -62,9 +62,23 @@ class LLMS_Generator
         add_filter('get_llms_content', array($this, 'get_llms_content'));
         add_action('init', array($this, 'llms_maybe_create_ai_sitemap_page'));
         add_action('llms_update_llms_file_cron', array($this, 'update_llms_file'));
+        add_action('admin_post_run_manual_update_llms_file', array($this, 'run_manual_update_llms_file'));
         add_action('init', array($this, 'llms_create_txt_cache_table_if_not_exists'), 999);
         add_action('updates_all_posts', array($this, 'updates_all_posts'), 999);
         add_filter('get_llms_generator_settings', array($this, 'get_llms_generator_settings'));
+    }
+
+    public function run_manual_update_llms_file()
+    {
+        set_time_limit(0);
+        if (!current_user_can('manage_options')) {
+            wp_die('Permission denied');
+        }
+
+        check_admin_referer('generate_llms_txt_nonce');
+        $this->update_llms_file();
+        wp_safe_redirect(admin_url('tools.php?page=llms-file-manager'));
+        exit;
     }
 
     public function get_llms_generator_settings( $settings = [] )
@@ -240,9 +254,11 @@ class LLMS_Generator
 
         $upload_dir = wp_upload_dir();
         $upload_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
-
+        $upload_temp_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.temp.llms.txt';
         if ($this->wp_filesystem && $this->wp_filesystem->exists($upload_path)) {
             $content .= $this->wp_filesystem->get_contents($upload_path);
+        } elseif($this->wp_filesystem && $this->wp_filesystem->exists($upload_temp_path)) {
+            $content .= $this->wp_filesystem->get_contents($upload_temp_path);
         }
         return $content;
     }

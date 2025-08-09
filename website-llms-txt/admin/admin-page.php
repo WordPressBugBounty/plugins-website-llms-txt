@@ -46,6 +46,10 @@ if (isset($_GET['settings-updated']) &&
                 <?php else: ?>
                     <p style="color: red;">✗ <?php esc_html_e('No LLMS.txt file found in root directory', 'website-llms-txt'); ?></p>
                 <?php endif; ?>
+                <?php
+                    $generate_url = wp_nonce_url(admin_url('admin-post.php?action=run_manual_update_llms_file'), 'generate_llms_txt_nonce');
+                ?>
+                <a href="<?php echo esc_url($generate_url); ?>" class="button button-primary"><?php esc_html_e('Generate Now', 'website-llms-txt'); ?></a>
             </div>
 
            <div class="card">
