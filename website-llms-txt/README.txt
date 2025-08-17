@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.1.3
+Stable tag: 8.1.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,16 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.1.4 =
+
+✨ New: ACF Template-Based Post Indexing
+• Posts using ACF-based templates (with custom fields and layouts) are now fully supported in the llms.txt generation process.
+• Ensures that even dynamically rendered content is included in the index file.
+
+🔍 Improvement: Post Type Indexing Summary
+• The admin interface now displays the total number of posts per type alongside how many have been indexed (e.g. “Posts (123 indexed of 1829)”).
+• Makes it easier to monitor indexing coverage and debug missing entries.
 
 = 8.1.3 =
 
@@ -1213,3 +1223,13 @@ These updates improve localization accuracy, content visibility logic, and metad
     • Resolved an issue where llms.txt was generated in the uploads directory but not copied to the WordPress root on WP Engine-hosted sites.
     • Improved file system handling to ensure compatibility with WP Engine’s direct FS method and restrictive environments.
     • Includes fallback logic for reliable file movement and permission setting.
+
+= 8.1.4 =
+
+✨ New: ACF Template-Based Post Indexing
+• Posts using ACF-based templates (with custom fields and layouts) are now fully supported in the llms.txt generation process.
+• Ensures that even dynamically rendered content is included in the index file.
+
+🔍 Improvement: Post Type Indexing Summary
+• The admin interface now displays the total number of posts per type alongside how many have been indexed (e.g. “Posts (123 indexed of 1829)”).
+• Makes it easier to monitor indexing coverage and debug missing entries.

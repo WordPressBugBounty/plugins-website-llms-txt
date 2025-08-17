@@ -66,6 +66,57 @@ class LLMS_Generator
         add_action('init', array($this, 'llms_create_txt_cache_table_if_not_exists'), 999);
         add_action('updates_all_posts', array($this, 'updates_all_posts'), 999);
         add_filter('get_llms_generator_settings', array($this, 'get_llms_generator_settings'));
+        add_action('single_llms_generator_hook', array($this, 'single_llms_generator_hook'));
+    }
+
+    public function clean_html_text( $html ) {
+        $text = wp_strip_all_tags( $html );
+        $text = preg_replace( '/\s{2,}/', ' ', $text );
+        $text = preg_replace( '/^\s*$(\r\n|\n|\r)/m', '', $text );
+        $text = trim( $text );
+        return $text;
+    }
+
+    public function single_llms_generator_hook( $post_id )
+    {
+        global $wpdb;
+        $post_url = get_permalink( $post_id );
+
+        if ( ! $post_url ) {
+            return;
+        }
+
+        $parsed   = parse_url( $post_url );
+        $host     = $parsed['host'] ?? '';
+
+        $response = wp_remote_get( $post_url, [
+            'timeout' => 10,
+            'sslverify' => false,
+            'headers' => [
+                'Host' => $host
+            ]
+        ]);
+
+        if ( is_wp_error( $response ) ) {
+            return;
+        }
+
+        $html = wp_remote_retrieve_body( $response );
+        if ( empty( $html ) ) {
+            return;
+        }
+
+        $text = $this->clean_html_text( $html );
+        $table = $wpdb->prefix . 'llms_txt_cache';
+        $wpdb->update($table, [
+            'content' => $text,
+        ], [
+            'post_id' => $post_id,
+        ], [
+            '%s',
+        ], [
+            '%d'
+        ]);
     }
 
     public function run_manual_update_llms_file()
@@ -739,6 +790,18 @@ class LLMS_Generator
 
         if ( $md_toggle ) {
             $show = 0;
+        }
+
+        $template = get_post_meta( $post->ID, '_wp_page_template', true );
+        if ( $template && $template !== 'default' && !trim($content)) {
+
+            $hook      = 'single_llms_generator_hook';
+            $post_id   = $post->ID;
+            $timestamp = wp_next_scheduled( $hook, [ $post_id ] );
+
+            if ( ! $timestamp ) {
+                wp_schedule_single_event( time() + 10, $hook, [ $post_id ] );
+            }
         }
 
         $wpdb->replace(

@@ -3,6 +3,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+global $wpdb;
+$table = $wpdb->prefix . 'llms_txt_cache';
+
 $latest_post = apply_filters('get_llms_content', '');
 $settings = apply_filters('get_llms_generator_settings', []);
 
@@ -84,15 +87,15 @@ if (isset($_GET['settings-updated']) &&
                         foreach ($settings['post_types'] as $type_name) {
                             if (isset($post_types[$type_name])) {
                                 $post_type = $post_types[$type_name];
+                                $all_count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", $post_type->name) );
+                                $indexed_count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE type = %s", $post_type->name) );
                                 ?>
                                 <div class="sortable-item active" data-post-type="<?php echo esc_attr($post_type->name); ?>">
                                     <label>
-                                        <input type="checkbox"
-                                               name="llms_generator_settings[post_types][]"
-                                               value="<?php echo esc_attr($post_type->name); ?>"
-                                               checked>
+                                        <input type="checkbox" name="llms_generator_settings[post_types][]" value="<?php echo esc_attr($post_type->name); ?>" checked>
                                         <span class="dashicons dashicons-menu"></span>
                                         <?php echo esc_html($post_type->labels->name); ?>
+                                        <small style="opacity: 0.7;">(<?php echo intval($indexed_count) . ' indexed of ' . intval($all_count); ?>)</small>
                                     </label>
                                 </div>
                                 <?php
