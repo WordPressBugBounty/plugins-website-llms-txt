@@ -29,6 +29,7 @@ class LLMS_MD
             add_meta_box( 'md_upload', __('Llms.txt', 'website-llms-txt'), function ( $post ) {
                 $md_url = get_post_meta( $post->ID, '_md_url', true );
                 $md_toggle = get_post_meta( $post->ID, '_llmstxt_page_md', true );
+                $custom_txt = get_post_meta($post->ID, '_llmstxt_custom_note', true);
                 wp_nonce_field( 'save_md_file', 'md_file_nonce' );
                 ?>
                 <label class="switch">
@@ -89,6 +90,10 @@ class LLMS_MD
                         <?php esc_html_e('Delete file', 'website-llms-txt'); ?>
                     </button>
                 <?php endif; ?>
+                <hr style="margin: 15px 0;">
+                <p><strong><?php esc_html_e('Custom llms.txt text', 'website-llms-txt'); ?></strong></p>
+                <textarea name="llmstxt_custom_note" rows="4" style="width:100%;"><?= esc_textarea($custom_txt); ?></textarea>
+                <p class="description"><?php esc_html_e('This text will be included in the llms.txt output for this post.', 'website-llms-txt'); ?></p>
                 <?php
             },null,'side' );
         }
@@ -107,6 +112,12 @@ class LLMS_MD
             update_post_meta( $post_id, '_llmstxt_page_md', 'yes' );
         } else {
             delete_post_meta( $post_id, '_llmstxt_page_md' );
+        }
+
+        if ( isset( $_POST['llmstxt_custom_note'] ) ) {
+            update_post_meta($post_id, '_llmstxt_custom_note', sanitize_textarea_field($_POST['llmstxt_custom_note']));
+        } else {
+            delete_post_meta( $post_id, '_llmstxt_custom_note' );
         }
 
         if ( isset( $_POST['delete_md_file'] ) && $_POST['delete_md_file'] == '1' ) {

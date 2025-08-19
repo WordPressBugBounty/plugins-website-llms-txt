@@ -784,9 +784,14 @@ class LLMS_Generator
         }
 
         $excerpts = $this->remove_shortcodes($post->post_excerpt);
-        ob_start();
+        $custom_txt = get_post_meta($post->ID, '_llmstxt_custom_note', true);
+        if($custom_txt) {
+            $content = $custom_txt;
+        } else {
+            ob_start();
             echo $this->content_cleaner->clean($this->remove_emojis( $this->remove_shortcodes(do_shortcode(get_the_content(null, false, $post)))));
-        $content = ob_get_clean();
+            $content = ob_get_clean();
+        }
 
         if ( $md_toggle ) {
             $show = 0;

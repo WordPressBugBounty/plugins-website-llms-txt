@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.1.4
+Stable tag: 8.1.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,17 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.1.5 =
+
+📝 New: Custom Description Field per Page/Post
+• Added a new “Description” textarea field to the llms.txt metabox on individual pages/posts.
+• This allows site admins to manually override the default description shown in the llms.txt output.
+• Useful for precise control over how content is described or interpreted by LLMs and search engines.
+
+🐛 Fix: Missing Description Field UI
+• Fixed an issue where the changelog referenced a description field, but it was not visible in the admin UI unless specific settings were enabled.
+• Now shown whenever page-level llms.txt settings are active.
 
 = 8.1.4 =
 
@@ -1233,3 +1244,14 @@ These updates improve localization accuracy, content visibility logic, and metad
 🔍 Improvement: Post Type Indexing Summary
 • The admin interface now displays the total number of posts per type alongside how many have been indexed (e.g. “Posts (123 indexed of 1829)”).
 • Makes it easier to monitor indexing coverage and debug missing entries.
+
+= 8.1.5 =
+
+📝 New: Custom Description Field per Page/Post
+• Added a new “Description” textarea field to the llms.txt metabox on individual pages/posts.
+• This allows site admins to manually override the default description shown in the llms.txt output.
+• Useful for precise control over how content is described or interpreted by LLMs and search engines.
+
+🐛 Fix: Missing Description Field UI
+• Fixed an issue where the changelog referenced a description field, but it was not visible in the admin UI unless specific settings were enabled.
+• Now shown whenever page-level llms.txt settings are active.
