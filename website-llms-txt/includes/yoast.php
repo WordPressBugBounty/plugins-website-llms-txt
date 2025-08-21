@@ -11,6 +11,25 @@ class LLMS_Yoast_Integration {
         add_filter('wpseo_sitemap_llms_content', array($this, 'generate_sitemap'));
         add_action('llms_clear_seo_caches', array($this, 'clear_sitemap_cache'));
         add_filter('query_vars', array($this, 'query_vars'));
+        add_filter('llms_generator_get_post_meta_description', array($this, 'get_post_meta_description'), 10,2);
+        add_filter('llms_generator_get_site_meta_description', array($this, 'get_site_meta_description'), 10);
+    }
+
+    public function get_site_meta_description( $site_description ) {
+        if (class_exists('WPSEO_Options')) {
+            $yoast_description = YoastSEO()->meta->for_posts_page()->description;
+            if($yoast_description) {
+                $site_description = $yoast_description;
+            }
+        }
+        return $site_description;
+    }
+
+    public function get_post_meta_description( $meta_description, $post ) {
+        if (function_exists('YoastSEO') && isset(YoastSEO()->meta, YoastSEO()->meta->for_post($post->ID)->description)) {
+            return YoastSEO()->meta->for_post($post->ID)->description;
+        }
+        return $meta_description;
     }
 
     public function query_vars( $vars ) {

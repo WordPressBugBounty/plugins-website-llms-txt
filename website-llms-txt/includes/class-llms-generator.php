@@ -639,49 +639,34 @@ class LLMS_Generator
 
     private function get_site_meta_description()
     {
-        if (class_exists('WPSEO_Options')) {
-            return YoastSEO()->meta->for_posts_page()->description;
-        } elseif (class_exists('RankMath')) {
-            return get_option('rank_math_description');
+        $description = get_bloginfo('description');
+        if ($description) {
+            return get_bloginfo('description');
         } else {
-            $description = get_bloginfo('description');
-            if ($description) {
-                return get_bloginfo('description');
-            } else {
-                $front_page_id = get_option('page_on_front');
-                $description = '';
-                if ($front_page_id) {
-                    $description = get_the_excerpt($front_page_id);
-                    if (empty($description)) {
-                        $description = get_post_field('post_content', $front_page_id);
-                    }
+            $front_page_id = get_option('page_on_front');
+            $description = '';
+            if ($front_page_id) {
+                $description = get_the_excerpt($front_page_id);
+                if (empty($description)) {
+                    $description = get_post_field('post_content', $front_page_id);
                 }
-
-                $description = $this->remove_shortcodes(str_replace(']]>', ']]&gt;', apply_filters('the_content', $description)));
-                return wp_trim_words(strip_tags(preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}-\x{202E}\x{2060}]/u', ' ', html_entity_decode($description))), 30, '');
             }
+
+            $description = $this->remove_shortcodes(str_replace(']]>', ']]&gt;', apply_filters('the_content', $description)));
+            $description = wp_trim_words(strip_tags(preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}-\x{202E}\x{2060}]/u', ' ', html_entity_decode($description))), 30, '');
         }
+
+        return apply_filters('llms_generator_get_site_meta_description', $description);
     }
 
     private function get_post_meta_description( $post )
     {
-        if (function_exists('YoastSEO') && isset(YoastSEO()->meta, YoastSEO()->meta->for_post($post->ID)->description)) {
-            return YoastSEO()->meta->for_post($post->ID)->description;
-        } elseif (class_exists('RankMath')) {
-            // Try using RankMath's helper class first
-            if (class_exists('RankMath\Helper')) {
-                $desc = RankMath\Helper::get_post_meta('description', $post->ID);
-                if (!empty($desc)) {
-                    return $desc;
-                }
-            }
-
-            // Fallback to Post class if Helper doesn't work
-            if (class_exists('RankMath\Post\Post')) {
-                return RankMath\Post\Post::get_meta('description', $post->ID);
-            }
+        $meta_description = apply_filters('llms_generator_get_post_meta_description', false, $post);
+        if($meta_description) {
+            return $meta_description;
         }
-        return false;
+
+        return $meta_description;
     }
 
     /**
@@ -809,39 +794,47 @@ class LLMS_Generator
             }
         }
 
+        $replace_data = [
+            'post_id' => $post_id,
+            'show' => $show,
+            'status' => $post->post_status,
+            'type' => $post->post_type,
+            'title' => $title,
+            'link' => $permalink,
+            'sku' => $sku,
+            'price' => $price,
+            'meta' => $clean_description,
+            'excerpts' => $excerpts,
+            'overview' => $overview,
+            'content' => $content,
+            'published' => get_the_date('Y-m-d', $post),
+            'modified' => get_the_modified_date('Y-m-d', $post),
+        ];
+
+        $replace_format = [
+            '%d',
+            '%d',
+            '%s',
+            '%s',
+            '%s',
+            '%s',
+            '%s',
+            '%s',
+            '%s',
+            '%s',
+            '%s',
+            '%s',
+            '%s',
+            '%s'
+        ];
+
+        $replace_data = apply_filters('llms_handle_post_update_replace_data', $replace_data, $post);
+        $replace_format = apply_filters('llms_handle_post_update_replace_format', $replace_format, $post);
+
         $wpdb->replace(
             $table,
-            [
-                'post_id' => $post_id,
-                'show' => $show,
-                'status' => $post->post_status,
-                'type' => $post->post_type,
-                'title' => $title,
-                'link' => $permalink,
-                'sku' => $sku,
-                'price' => $price,
-                'meta' => $clean_description,
-                'excerpts' => $excerpts,
-                'overview' => $overview,
-                'content' => $content,
-                'published' => get_the_date('Y-m-d', $post),
-                'modified' => get_the_modified_date('Y-m-d', $post),
-            ], [
-                '%d',
-                '%d',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%s'
-            ]
+            $replace_data,
+            $replace_format
         );
 
         if ($this->settings['update_frequency'] === 'immediate' && $update !== 'manual') {

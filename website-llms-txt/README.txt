@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.7
 Requires PHP: 7.2
-Stable tag: 8.1.5
+Stable tag: 8.1.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,12 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.1.6 =
+
+🛠 Improved: Extensibility & Performance
+• Added filter llms_generator_get_post_meta_description to make it easier to extend or replace the logic for retrieving page/post descriptions (e.g. integrating with Yoast, RankMath, or custom SEO functions).
+• Added new filter to control which database index/field is used when building the llms.txt file, giving developers more flexibility for performance tuning and custom setups.
 
 = 8.1.5 =
 
@@ -1255,3 +1261,9 @@ These updates improve localization accuracy, content visibility logic, and metad
 🐛 Fix: Missing Description Field UI
 • Fixed an issue where the changelog referenced a description field, but it was not visible in the admin UI unless specific settings were enabled.
 • Now shown whenever page-level llms.txt settings are active.
+
+= 8.1.6 =
+
+🛠 Improved: Extensibility & Performance
+• Added filter llms_generator_get_post_meta_description to make it easier to extend or replace the logic for retrieving page/post descriptions (e.g. integrating with Yoast, RankMath, or custom SEO functions).
+• Added new filter to control which database index/field is used when building the llms.txt file, giving developers more flexibility for performance tuning and custom setups.

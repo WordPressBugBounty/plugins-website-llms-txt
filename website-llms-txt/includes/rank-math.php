@@ -48,3 +48,34 @@ add_filter('rank_math/sitemap/exclude_post_type', function($exclude, $post_type)
     }
     return $exclude;
 }, 20, 2);
+
+add_filter('llms_generator_get_post_meta_description', 'llm_rank_math_compatibility_get_post_meta_description', 10, 2);
+function llm_rank_math_compatibility_get_post_meta_description( $meta_description, $post ) {
+    if (class_exists('RankMath')) {
+        // Try using RankMath's helper class first
+        if (class_exists('RankMath\Helper')) {
+            $desc = RankMath\Helper::get_post_meta('description', $post->ID);
+            if (!empty($desc)) {
+                return $desc;
+            }
+        }
+
+        // Fallback to Post class if Helper doesn't work
+        if (class_exists('RankMath\Post\Post')) {
+            return RankMath\Post\Post::get_meta('description', $post->ID);
+        }
+    }
+    return $meta_description;
+}
+
+add_filter('llms_generator_get_site_meta_description', 'llm_rank_math_get_site_meta_description', 10);
+function llm_rank_math_get_site_meta_description( $site_description ) {
+    if (class_exists('RankMath')) {
+        $rank_math_description = get_option('rank_math_description');
+        if($rank_math_description) {
+            $site_description = $rank_math_description;
+        }
+    }
+
+    return $site_description;
+}
