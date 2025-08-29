@@ -160,6 +160,7 @@ class LLMS_Core {
                 'sanitize_callback' => array($this, 'sanitize_settings'),
                 'default' => array(
                     'post_types' => array('page', 'documentation', 'post'),
+                    'post_name' => array(),
                     'max_posts' => 100,
                     'max_words' => 250,
                     'include_meta' => false,
@@ -201,6 +202,13 @@ class LLMS_Core {
             }
         }
         
+        $clean['post_name'] = array();
+        if (isset($value['post_name']) && is_array($value['post_name'])) {
+            foreach ($value['post_name'] as $name => $custom_name) {
+                $clean['post_name'][$name] = sanitize_text_field($custom_name);
+            }
+        }
+
         // Sanitize max posts
         $clean['max_posts'] = isset($value['max_posts']) ? 
             min(max(absint($value['max_posts']), 1), 100000) : 100;

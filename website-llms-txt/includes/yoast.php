@@ -66,7 +66,7 @@ class LLMS_Yoast_Integration {
                 'post_status' => 'publish'
             ]);
 
-            if (empty($latest_post)) {
+            if (empty($latest_post) && !class_exists('WPSEO_Sitemaps_Renderer')) {
                 return '';
             }
 
@@ -77,15 +77,13 @@ class LLMS_Yoast_Integration {
                 'priority' => '0.8'
             );
 
-            $xsl_url = esc_url(home_url('main-sitemap.xsl'));
             $loc = esc_url($url['loc']);
             $lastmod = esc_xml($url['lastmod']);
             $changefreq = esc_xml($url['changefreq']);
             $priority = esc_xml($url['priority']);
 
-            return <<<SEO
-<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="{$xsl_url}"?>
+
+            $sitemap = <<<SEO
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
     <url>
         <loc>{$loc}</loc>
@@ -95,6 +93,7 @@ class LLMS_Yoast_Integration {
     </url>
 </urlset>
 SEO;
+            echo (new WPSEO_Sitemaps_Renderer())->get_output( $sitemap );
         }
     }
 

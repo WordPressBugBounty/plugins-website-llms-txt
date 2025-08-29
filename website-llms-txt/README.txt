@@ -2,9 +2,9 @@
 Contributors: ryhowa, samsonovteamwork
 Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
-Tested up to: 6.7
+Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 8.1.6
+Stable tag: 8.1.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,17 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.1.7 =
+
+🐞 Fixed: XML Sitemap Stylesheet Issues
+• Fixed an issue where llms-sitemap.xml displayed a blank page in Chrome/Edge or the error Parsing an XSLT stylesheet failed in Firefox.
+• Added a check to ensure the stylesheet file (main-sitemap.xsl) exists before including it. If missing, the XML now loads correctly without the XSL.
+• Improved cross-browser compatibility for displaying XML sitemaps.
+
+✨ New: Post Type Customization in llms.txt
+• Added support for customizing post type display names in the llms.txt file.
+• Developers can now provide more descriptive or human-friendly titles for each custom post type section, improving clarity for both search engines and users.
 
 = 8.1.6 =
 
@@ -1267,3 +1278,14 @@ These updates improve localization accuracy, content visibility logic, and metad
 🛠 Improved: Extensibility & Performance
 • Added filter llms_generator_get_post_meta_description to make it easier to extend or replace the logic for retrieving page/post descriptions (e.g. integrating with Yoast, RankMath, or custom SEO functions).
 • Added new filter to control which database index/field is used when building the llms.txt file, giving developers more flexibility for performance tuning and custom setups.
+
+= 8.1.7 =
+
+🐞 Fixed: XML Sitemap Stylesheet Issues
+• Fixed an issue where llms-sitemap.xml displayed a blank page in Chrome/Edge or the error Parsing an XSLT stylesheet failed in Firefox.
+• Added a check to ensure the stylesheet file (main-sitemap.xsl) exists before including it. If missing, the XML now loads correctly without the XSL.
+• Improved cross-browser compatibility for displaying XML sitemaps.
+
+✨ New: Post Type Customization in llms.txt
+• Added support for customizing post type display names in the llms.txt file.
+• Developers can now provide more descriptive or human-friendly titles for each custom post type section, improving clarity for both search engines and users.

@@ -25,6 +25,7 @@ class LLMS_Generator
     {
         $this->settings = get_option('llms_generator_settings', array(
             'post_types' => array('page', 'documentation', 'post'),
+            'post_name' => array(),
             'max_posts' => 100,
             'max_words' => 250,
             'include_meta' => false,
@@ -441,7 +442,13 @@ class LLMS_Generator
 
             $post_type_obj = get_post_type_object($post_type);
             if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
-                $this->write_file(mb_convert_encoding("\n## {$post_type_obj->labels->name}\n\n", 'UTF-8', 'UTF-8'));
+
+                $name = $post_type_obj->labels->name;
+                if(isset($this->settings['post_name'][$post_type_obj->labels->name]) && $this->settings['post_name'][$post_type_obj->labels->name]) {
+                    $name = $this->settings['post_name'][$post_type_obj->labels->name];
+                }
+
+                $this->write_file(mb_convert_encoding("\n## {$name}\n\n", 'UTF-8', 'UTF-8'));
             }
 
             $offset = 0;
@@ -514,7 +521,11 @@ class LLMS_Generator
             if(isset($this->settings['detailed_content']) && $this->settings['detailed_content'] || isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] || isset($this->settings['include_taxonomies']) && $this->settings['include_taxonomies'] || isset($this->settings['include_meta']) && $this->settings['include_meta']) {
                 $post_type_obj = get_post_type_object($post_type);
                 if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
-                    $output = "\n## " . $post_type_obj->labels->name . "\n\n";
+                    $name = $post_type_obj->labels->name;
+                    if(isset($this->settings['post_name'][$post_type_obj->labels->name]) && $this->settings['post_name'][$post_type_obj->labels->name]) {
+                        $name = $this->settings['post_name'][$post_type_obj->labels->name];
+                    }
+                    $output = "\n## " . $name . "\n\n";
                     $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
                 }
             }

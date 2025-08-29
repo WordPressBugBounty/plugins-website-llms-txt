@@ -93,6 +93,7 @@ if (isset($_GET['settings-updated']) &&
                                 <div class="sortable-item active" data-post-type="<?php echo esc_attr($post_type->name); ?>">
                                     <label>
                                         <input type="checkbox" name="llms_generator_settings[post_types][]" value="<?php echo esc_attr($post_type->name); ?>" checked>
+                                        <input type="text" name="llms_generator_settings[post_name][<?php echo esc_html($post_type->labels->name); ?>]" value="<?php echo $settings['post_name'][esc_html($post_type->labels->name)] ?? ''  ?>"/>
                                         <span class="dashicons dashicons-menu"></span>
                                         <?php echo esc_html($post_type->labels->name); ?>
                                         <small style="opacity: 0.7;">(<?php echo intval($indexed_count) . ' indexed of ' . intval($all_count); ?>)</small>
@@ -104,14 +105,16 @@ if (isset($_GET['settings-updated']) &&
 
                         // Output unordered items
                         foreach ($unordered_types as $post_type) {
+                            $all_count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", $post_type->name) );
+                            $indexed_count = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE type = %s", $post_type->name) );
                             ?>
                             <div class="sortable-item" data-post-type="<?php echo esc_attr($post_type->name); ?>">
                                 <label>
-                                    <input type="checkbox"
-                                           name="llms_generator_settings[post_types][]"
-                                           value="<?php echo esc_attr($post_type->name); ?>">
+                                    <input type="checkbox" name="llms_generator_settings[post_types][]" value="<?php echo esc_attr($post_type->name); ?>"/>
+                                    <input type="text" name="llms_generator_settings[post_name][<?php echo esc_html($post_type->labels->name); ?>]" value="<?php echo $settings['post_name'][esc_html($post_type->labels->name)] ?? ''  ?>"/>
                                     <span class="dashicons dashicons-menu"></span>
                                     <?php echo esc_html($post_type->labels->name); ?>
+                                    <small style="opacity: 0.7;">(<?php echo intval($indexed_count) . ' indexed of ' . intval($all_count); ?>)</small>
                                 </label>
                             </div>
                             <?php
