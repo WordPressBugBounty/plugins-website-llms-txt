@@ -728,6 +728,7 @@ class LLMS_Generator
             $overview = sprintf("- [%s](%s)%s\n", $post->post_title, $permalink, $markdown . ($this->settings['include_excerpts'] ? ': ' . preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $description) : ''));
         }
 
+        $show = 1;
         if (isset($post->post_type) && $post->post_type === 'product') {
             $sku = get_post_meta($post->ID, '_sku', true);
             $price = get_post_meta($post->ID, '_price', true);
@@ -735,6 +736,20 @@ class LLMS_Generator
             if (!empty($price)) {
                 $price = number_format((float)$price, 2) . " " . $currency;
             }
+
+            $terms           = get_the_terms( $post->ID, 'product_visibility' );
+            $term_names      = is_array( $terms ) ? wp_list_pluck( $terms, 'name' ) : array();
+            $exclude_search  = in_array( 'exclude-from-search', $term_names, true );
+            $exclude_catalog = in_array( 'exclude-from-catalog', $term_names, true );
+
+            if ( $exclude_search && $exclude_catalog ) {
+                $show = 0;
+            } elseif ( $exclude_search ) {
+                $show = 0;
+            } elseif ( $exclude_catalog ) {
+                $show = 0;
+            }
+
         }
 
         $clean_description = '';
@@ -743,7 +758,6 @@ class LLMS_Generator
             $clean_description = preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $meta_description);
         }
 
-        $show = 1;
         $use_yoast = class_exists('WPSEO_Meta');
         $use_rankmath = function_exists('rank_math');
         if($use_yoast) {

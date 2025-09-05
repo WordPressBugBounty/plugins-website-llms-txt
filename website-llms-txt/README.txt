@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 8.1.7
+Stable tag: 8.1.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,13 @@ You can choose between immediate, daily, or weekly updates in the plugin setting
 4. Manual file upload interface
 
 == Changelog ==
+
+= 8.1.8 =
+
+✨ Improvement: Hidden Posts Exclusion
+• Posts and products marked with WooCommerce catalog visibility settings “exclude-from-catalog” or “exclude-from-search” are now excluded from being listed in llms.txt.
+• Ensures that items set to Hidden, Shop only, or Search results only do not appear in the generated llms.txt file.
+• Aligns llms.txt output with WooCommerce visibility rules for better consistency and control.
 
 = 8.1.7 =
 
@@ -1289,3 +1296,10 @@ These updates improve localization accuracy, content visibility logic, and metad
 ✨ New: Post Type Customization in llms.txt
 • Added support for customizing post type display names in the llms.txt file.
 • Developers can now provide more descriptive or human-friendly titles for each custom post type section, improving clarity for both search engines and users.
+
+= 8.1.8 =
+
+✨ Improvement: Hidden Posts Exclusion
+• Posts and products marked with WooCommerce catalog visibility settings “exclude-from-catalog” or “exclude-from-search” are now excluded from being listed in llms.txt.
+• Ensures that items set to Hidden, Shop only, or Search results only do not appear in the generated llms.txt file.
+• Aligns llms.txt output with WooCommerce visibility rules for better consistency and control.
