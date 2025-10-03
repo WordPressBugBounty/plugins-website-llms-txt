@@ -20,6 +20,7 @@ class LLMS_Generator
     private $limit = 500;
     // New property for temporary file path
     private $temp_llms_path;
+    private $batch_size = 5;
 
     public function __construct()
     {
@@ -54,6 +55,10 @@ class LLMS_Generator
         // Move initial generation to init hook
         add_action('init', array($this, 'init_generator'), 20);
 
+        add_action('wp_ajax_llms_gen_init',  [$this, 'ajax_gen_init']);
+        add_action('wp_ajax_llms_gen_step',  [$this, 'ajax_gen_step']);
+        add_action('wp_ajax_llms_update_file',  [$this, 'ajax_update_file']);
+
         // Hook into post updates
         add_action('save_post', array($this, 'handle_post_update'), 10, 3);
         add_action('deleted_post', array($this, 'handle_post_deletion'), 999, 2);
@@ -68,6 +73,13 @@ class LLMS_Generator
         add_action('updates_all_posts', array($this, 'updates_all_posts'), 999);
         add_filter('get_llms_generator_settings', array($this, 'get_llms_generator_settings'));
         add_action('single_llms_generator_hook', array($this, 'single_llms_generator_hook'));
+    }
+
+    public function ajax_update_file(){
+        if(!current_user_can('manage_options')) wp_send_json_error('denied');
+        check_ajax_referer('llms_gen_nonce');
+        $this->update_llms_file();
+        wp_send_json_success();
     }
 
     public function clean_html_text( $html ) {
@@ -680,6 +692,106 @@ class LLMS_Generator
         return $meta_description;
     }
 
+    public function ajax_gen_init() {
+        if ( ! current_user_can('manage_options') ) wp_send_json_error('Permission denied');
+        check_ajax_referer('llms_gen_nonce');
+
+        global $wpdb;
+        $table_cache = $wpdb->prefix . 'llms_txt_cache';
+
+        $ids = [];
+        foreach ($this->settings['post_types'] as $post_type) {
+            if ($post_type === 'llms_txt') continue;
+            $sql = $wpdb->prepare("SELECT p.ID FROM {$wpdb->posts} p LEFT JOIN {$table_cache} c ON p.ID=c.post_id WHERE p.post_status='publish' AND p.post_type=%s AND c.post_id IS NULL", $post_type);
+            $ids = array_merge($ids, array_map('intval', $wpdb->get_col($sql)));
+        }
+        $ids = array_values(array_unique($ids));
+
+        $qid = 'llms_q_' . wp_generate_uuid4();
+        set_transient($qid, [
+            'ids'   => $ids,
+            'done'  => 0,
+            'total' => count($ids),
+        ], HOUR_IN_SECONDS);
+
+        wp_send_json_success(['queue_id'=>$qid,'total'=>count($ids)]);
+    }
+
+    private function get_remote_title( int $post_id ): string {
+        $url = get_permalink( $post_id );
+        if ( ! $url ) {
+            return '';
+        }
+
+        $parsed = parse_url( $url );
+        $host   = $parsed['host'] ?? '';
+
+        $resp = wp_remote_get( $url, [
+            'timeout'   => 12,
+            'sslverify' => false,
+            'headers'   => [
+                'Host'        => $host,
+                'User-Agent'  => 'LLMS-Generator/1.0 (+'. home_url('/') .')',
+                'Accept'      => 'text/html',
+            ],
+        ] );
+
+        if ( is_wp_error( $resp ) ) {
+            return '';
+        }
+
+        $html = wp_remote_retrieve_body( $resp );
+        if ( ! $html ) {
+            return '';
+        }
+
+        if ( preg_match( '/<title[^>]*>(.*?)<\/title>/is', $html, $m ) ) {
+            $title = html_entity_decode( $m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+            $title = wp_strip_all_tags( $title );
+            $title = trim( preg_replace( '/\s+/', ' ', $title ) );
+
+            return $title;
+        }
+
+        return '';
+    }
+
+    public function ajax_gen_step()
+    {
+        set_time_limit(0);
+        if (!current_user_can('manage_options')) wp_send_json_error('Permission denied');
+        check_ajax_referer('llms_gen_nonce');
+
+        $qid = sanitize_text_field($_POST['queue_id'] ?? '');
+        if (!$qid) wp_send_json_error('Missing queue_id');
+
+        $state = get_transient($qid);
+        if (!$state) {
+            wp_send_json_success([
+                'done' => 0,
+                'total' => 0
+            ]);
+        }
+
+        $batch = array_splice($state['ids'], 0, $this->batch_size);
+
+        foreach ($batch as $post_id) {
+            $post = get_post($post_id);
+            if ($post instanceof WP_Post) {
+                $this->handle_post_update($post_id, $post, 'manual');
+            }
+            $state['done']++;
+        }
+
+        set_transient($qid, $state, HOUR_IN_SECONDS);
+        if (empty($state['ids'])) delete_transient($qid);
+
+        wp_send_json_success([
+            'done' => $state['done'],
+            'total' => $state['total']
+        ]);
+    }
+
     /**
      * @param int $post_id
      * @param WP_Post $post
@@ -766,6 +878,14 @@ class LLMS_Generator
             if($robots_noindex || $robots_nofollow) {
                 $show = 0;
             }
+        } else {
+            if(defined('SEOPRESS_VERSION')) {
+                $robots_noindex = get_post_meta($post_id, '_seopress_robots_index', true);
+                $robots_nofollow = get_post_meta($post_id, '_seopress_robots_follow', true);
+                if($robots_noindex || $robots_nofollow) {
+                    $show = 0;
+                }
+            }
         }
 
         $title = $post->post_title;
@@ -778,6 +898,11 @@ class LLMS_Generator
 
             if(is_array($robots_noindex) && (in_array('nofollow', $robots_noindex) || in_array('noindex', $robots_noindex))) {
                 $show = 0;
+            }
+        } else {
+            $remote_title = $this->get_remote_title( $post->ID );
+            if ( $remote_title !== '' ) {
+                $title = $remote_title;
             }
         }
 

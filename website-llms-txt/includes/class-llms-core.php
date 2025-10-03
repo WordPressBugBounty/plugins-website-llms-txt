@@ -260,23 +260,11 @@ class LLMS_Core {
         wp_enqueue_script('jquery-ui-sortable');
 
         // Enqueue admin styles with dashicons dependency
-        wp_enqueue_style(
-            'llms-admin-styles',
-            LLMS_PLUGIN_URL . 'admin/admin-styles.css',
-            array('dashicons'),
-            LLMS_VERSION
-        );
-
-        // Register and enqueue admin script
-        wp_register_script(
-            'llms-admin-script',
-            LLMS_PLUGIN_URL . 'admin/admin-script.js',
-            array('jquery', 'jquery-ui-sortable'),
-            LLMS_VERSION,
-            true
-        );
-
-        wp_enqueue_script('llms-admin-script');
+        wp_enqueue_style('llms-admin-styles', LLMS_PLUGIN_URL . 'admin/admin-styles.css', array('dashicons'), LLMS_VERSION);
+        wp_enqueue_script('llms-admin-script', LLMS_PLUGIN_URL . 'admin/admin-script.js', array('jquery', 'jquery-ui-sortable'), LLMS_VERSION, true);
+        wp_localize_script('llms-admin-script', 'LLMS_GEN', [
+            'nonce' => wp_create_nonce('llms_gen_nonce'),
+        ]);
     }
 
     public function activate() {

@@ -52,7 +52,13 @@ if (isset($_GET['settings-updated']) &&
                 <?php
                     $generate_url = wp_nonce_url(admin_url('admin-post.php?action=run_manual_update_llms_file'), 'generate_llms_txt_nonce');
                 ?>
-                <a href="<?php echo esc_url($generate_url); ?>" class="button button-primary"><?php esc_html_e('Generate Now', 'website-llms-txt'); ?></a>
+                <a href="<?php echo esc_url($generate_url); ?>" class="button button-primary" id="llms-generate-now"><?php esc_html_e('Generate Now', 'website-llms-txt'); ?></a>
+                <div id="llms-progress" style="display:none;margin-top:12px;max-width:560px">
+                    <div style="height:12px;background:#eef2f7;border-radius:8px;overflow:hidden">
+                        <div id="llms-progress-bar" style="height:12px;width:0;background:#0ea5e9"></div>
+                    </div>
+                    <div id="llms-progress-text" style="margin-top:8px;font-weight:600">0%</div>
+                </div>
             </div>
 
            <div class="card">
