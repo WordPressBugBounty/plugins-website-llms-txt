@@ -34,21 +34,16 @@ jQuery(document).ready(function($) {
         return true;
     });
 
-    const $btn  = $('#llms-generate-now');
-    const $wrap = $('#llms-progress');
-    const $bar  = $('#llms-progress-bar');
-    const $txt  = $('#llms-progress-text');
-
     let queueId = null;
     let running = false;
 
-    function setProgress(done, total){
+    function setProgress(done, total, $txt, $bar){
         const pct = total ? Math.round(done/total*100) : 0;
         $bar.css('width', pct+'%');
         $txt.text(`${done} / ${total} (${pct}%)`);
     }
 
-    function step(){
+    function step( $txt, $bar ){
         if(!running) return;
         $.post(ajaxurl, {
             action: 'llms_gen_step',
@@ -58,9 +53,9 @@ jQuery(document).ready(function($) {
             if(!r || r.success === false){
                 running = false; $txt.text(r && r.data ? r.data : 'Error'); return;
             }
-            setProgress(r.data.done, r.data.total);
+            setProgress(r.data.done, r.data.total, $txt, $bar);
             if(r.data.done < r.data.total) {
-                setTimeout(step, 150);
+                setTimeout(() => step($txt, $bar), 150);
             } else {
                 running = false;
                 $txt.text('Done ✓');
@@ -76,11 +71,13 @@ jQuery(document).ready(function($) {
         });
     }
 
-    $btn.on('click', function(e){
+    $('#llms-generate-now').on('click', function(e){
         e.preventDefault();
         if(running) return;
-        $wrap.show();
-        setProgress(0,0);
+        $('#llms-progress').show();
+        const $bar  = $('#llms-progress-bar');
+        const $txt  = $('#llms-progress-text');
+        setProgress(0,0, $txt, $bar);
         $txt.text('Initializing…');
 
         $.post(ajaxurl, {
@@ -91,8 +88,31 @@ jQuery(document).ready(function($) {
                 $txt.text(r && r.data ? r.data : 'Init error'); return;
             }
             queueId = r.data.queue_id; running = true;
-            setProgress(0, r.data.total);
-            step();
+            setProgress(0, r.data.total, $txt, $bar);
+            step( $txt, $bar );
+        })
+        .fail(function(){ $txt.text('Init request failed'); });
+    });
+
+    $('#llms-delete-and-recreate').on('click', function(e){
+        e.preventDefault();
+        if(running) return;
+        $('#llms-reset-progress').show();
+        const $bar  = $('#llms-reset-progress-bar');
+        const $txt  = $('#llms-reset-progress-text');
+        setProgress(0,0, $txt, $bar);
+        $txt.text('Initializing…');
+
+        $.post(ajaxurl, {
+            action: 'run_llms_txt_reset_file',
+            _wpnonce: LLMS_GEN.nonce
+        }).done(function(r){
+            if(!r || r.success === false){
+                $txt.text(r && r.data ? r.data : 'Init error'); return;
+            }
+            queueId = r.data.queue_id; running = true;
+            setProgress(0, r.data.total, $txt, $bar);
+            step( $txt, $bar );
         })
         .fail(function(){ $txt.text('Init request failed'); });
     });

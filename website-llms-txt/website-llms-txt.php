@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: Website LLMs.txt
- * Description: Manages and automatically generates LLMS.txt files for LLM/AI consumption and integrates with SEO plugins (Yoast SEO, RankMath)
- * Version: 8.1.9
- * Author: Website LLM
- * Author URI: https://wordpress.org/plugins/website-llms-txt/
+ * Description: Generates and manages an llms.txt file, a structured, AI-ready index that helps large language models like ChatGPT, Claude, and Perplexity understand your site's most important content.
+ * Version: 8.2.5
+ * Author: Ryan Howard
+ * Author URI: https://completeseo.com/author/ryan-howard/
  * Text Domain: website-llms-txt
  * Domain Path: /languages
  * Requires at least: 5.8
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('LLMS_VERSION', '8.1.9');
+define('LLMS_VERSION', '8.2.5');
 define('LLMS_PLUGIN_FILE', __FILE__);
 define('LLMS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('LLMS_PLUGIN_URL', plugin_dir_url(__FILE__));

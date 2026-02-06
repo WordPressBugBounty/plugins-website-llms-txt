@@ -35,6 +35,7 @@ class LLMS_Generator
             'update_frequency' => 'immediate',
             'need_check_option' => true,
             'noindex_header' => false,
+            'gform_include' => false,
             'llms_allow_indexing' => false,
             'llms_local_log_enabled' => false,
             'llms_global_telemetry_optin' => false,
@@ -55,6 +56,7 @@ class LLMS_Generator
         // Move initial generation to init hook
         add_action('init', array($this, 'init_generator'), 20);
 
+        add_action('wp_ajax_run_llms_txt_reset_file',  [$this, 'ajax_reset_gen_init']);
         add_action('wp_ajax_llms_gen_init',  [$this, 'ajax_gen_init']);
         add_action('wp_ajax_llms_gen_step',  [$this, 'ajax_gen_step']);
         add_action('wp_ajax_llms_update_file',  [$this, 'ajax_update_file']);
@@ -426,9 +428,17 @@ class LLMS_Generator
 
     private function remove_shortcodes($content)
     {
+        $settings = apply_filters('get_llms_generator_settings', []);
         $clean = preg_replace('/\[[^\]]+\]/', '', $content);
 
+        if(!isset($settings['gform_include']) || !$settings['gform_include']) {
+            $clean = preg_replace('/<form[^>]+id=("|\')gform_\d+("|\')[\s\S]*?<\/form>/i', '', $clean);
+
+            $clean = preg_replace('/<div[^>]+class=("|\')[^"\']*gform_wrapper[^"\']*("|\')[\s\S]*?<\/div>/i', '', $clean);
+        }
+
         $clean = preg_replace('/<style\b[^>]*>.*?<\/style>/is', '', $clean);
+        $clean = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $clean);
 
         $clean = preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}-\x{202E}\x{2060}]/u', ' ', $clean);
 
@@ -692,6 +702,52 @@ class LLMS_Generator
         return $meta_description;
     }
 
+    public function ajax_reset_gen_init() {
+        if ( ! current_user_can('manage_options') ) wp_send_json_error('Permission denied');
+        check_ajax_referer('llms_gen_nonce');
+
+        global $wpdb;
+        $table_cache = $wpdb->prefix . 'llms_txt_cache';
+
+        if (!$this->wp_filesystem) {
+            $this->init_filesystem();
+        }
+
+        $upload_dir = wp_upload_dir();
+        $old_upload_path = $upload_dir['basedir'] . '/llms.txt';
+        $new_upload_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
+        $this->temp_llms_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.temp.llms.txt';
+
+        if ($this->wp_filesystem->exists($old_upload_path)) {
+            $this->wp_filesystem->delete($old_upload_path);
+        }
+        if ($this->wp_filesystem->exists($new_upload_path)) {
+            $this->wp_filesystem->delete($new_upload_path);
+        }
+        if ($this->wp_filesystem->exists($this->temp_llms_path)) {
+            $this->wp_filesystem->delete($this->temp_llms_path);
+        }
+
+        $wpdb->query( "TRUNCATE TABLE {$table_cache}" );
+
+        $ids = [];
+        foreach ($this->settings['post_types'] as $post_type) {
+            if ($post_type === 'llms_txt') continue;
+            $sql = $wpdb->prepare("SELECT p.ID FROM {$wpdb->posts} p LEFT JOIN {$table_cache} c ON p.ID=c.post_id WHERE p.post_type=%s AND c.post_id IS NULL", $post_type);
+            $ids = array_merge($ids, array_map('intval', $wpdb->get_col($sql)));
+        }
+        $ids = array_values(array_unique($ids));
+
+        $qid = 'llms_q_' . wp_generate_uuid4();
+        set_transient($qid, [
+            'ids'   => $ids,
+            'done'  => 0,
+            'total' => count($ids),
+        ], HOUR_IN_SECONDS);
+
+        wp_send_json_success(['queue_id'=>$qid,'total'=>count($ids)]);
+    }
+
     public function ajax_gen_init() {
         if ( ! current_user_can('manage_options') ) wp_send_json_error('Permission denied');
         check_ajax_referer('llms_gen_nonce');
@@ -702,7 +758,7 @@ class LLMS_Generator
         $ids = [];
         foreach ($this->settings['post_types'] as $post_type) {
             if ($post_type === 'llms_txt') continue;
-            $sql = $wpdb->prepare("SELECT p.ID FROM {$wpdb->posts} p LEFT JOIN {$table_cache} c ON p.ID=c.post_id WHERE p.post_status='publish' AND p.post_type=%s AND c.post_id IS NULL", $post_type);
+            $sql = $wpdb->prepare("SELECT p.ID FROM {$wpdb->posts} p LEFT JOIN {$table_cache} c ON p.ID=c.post_id WHERE p.post_type=%s AND c.post_id IS NULL", $post_type);
             $ids = array_merge($ids, array_map('intval', $wpdb->get_col($sql)));
         }
         $ids = array_values(array_unique($ids));
@@ -784,7 +840,10 @@ class LLMS_Generator
         }
 
         set_transient($qid, $state, HOUR_IN_SECONDS);
-        if (empty($state['ids'])) delete_transient($qid);
+        if (empty($state['ids'])) {
+            delete_transient($qid);
+            $this->update_llms_file();
+        }
 
         wp_send_json_success([
             'done' => $state['done'],
@@ -817,7 +876,15 @@ class LLMS_Generator
         $price = '';
         $sku = '';
 
-        $permalink = get_permalink($post->ID);
+        if(defined('ICL_LANGUAGE_CODE')) {
+            $permalink = apply_filters(
+                'wpml_permalink',
+                get_permalink($post->ID),
+                ICL_LANGUAGE_CODE
+            );
+        } else {
+            $permalink = get_permalink($post->ID);
+        }
 
         $description = isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] ? $this->get_post_meta_description( $post ) : '';
         $markdown = '';
@@ -1032,7 +1099,7 @@ class LLMS_Generator
         }
 
         $upload_dir = wp_upload_dir();
-        $old_upload_path = $upload_dir['basedir'] . '/llms.txt'; // Path for legacy file
+        $old_upload_path = $upload_dir['basedir'] . '/llms.txt';
         $new_upload_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.llms.txt';
         $this->temp_llms_path = $upload_dir['basedir'] . '/' . $this->llms_name . '.temp.llms.txt';
 

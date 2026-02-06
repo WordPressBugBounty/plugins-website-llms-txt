@@ -183,9 +183,18 @@ if (isset($_GET['settings-updated']) &&
                             <?php esc_html_e('Include taxonomies (categories, tags, etc.)', 'website-llms-txt'); ?>
                         </label>
                     </p>
+                    <p>
+                        <label>
+                            <input type="checkbox"
+                                   name="llms_generator_settings[gform_include]"
+                                   value="1"
+                                <?php checked(!empty($settings['gform_include'])); ?>>
+                            <?php esc_html_e('Include Gravity Forms form fields in llms.txt', 'website-llms-txt'); ?>
+                        </label>
+                    </p>
                     <?php if(!empty($settings)): ?>
                         <?php foreach($settings as $key => $value): ?>
-                            <?php if(in_array($key, ['post_types', 'max_posts', 'max_words', 'include_meta', 'include_excerpts', 'detailed_content', 'include_taxonomies'])) continue ?>
+                            <?php if(in_array($key, ['post_types', 'max_posts', 'max_words', 'include_meta', 'include_excerpts', 'detailed_content', 'include_taxonomies', 'gform_include'])) continue ?>
                             <?php if(is_array($value)): ?>
                                 <?php foreach($value as $second_key => $second_value): ?>
                                     <input type="hidden" name="llms_generator_settings[<?= $key ?>][]" value="<?= $second_value ?>"/>
@@ -275,6 +284,26 @@ if (isset($_GET['settings-updated']) &&
                     </p>
                 </form>
             </div>
+            <div class="card">
+                <h2><?php esc_html_e('LLMs.txt Reset', 'website-llms-txt'); ?></h2>
+                <p><?php esc_html_e('If your llms.txt file contains duplicate or outdated data, you can delete it and let the system generate a new one automatically.', 'website-llms-txt'); ?></p>
+                <p><?php esc_html_e('When you click the button, the plugin will:', 'website-llms-txt'); ?></p>
+                <ol class="llms-bullet-list">
+                    <li><?php esc_html_e('Delete the current llms.txt file (if it exists).', 'website-llms-txt'); ?></li>
+                    <li><?php esc_html_e('Clear any related transient cache entries.', 'website-llms-txt'); ?></li>
+                    <li><?php esc_html_e('Rebuild a fresh version of llms.txt based on current settings and published content.', 'website-llms-txt'); ?></li>
+                </ol>
+                <?php
+                $generate_url = wp_nonce_url(admin_url('admin-post.php?action=run_llms_txt_reset_file'), 'generate_llms_txt_nonce');
+                ?>
+                <a href="<?php echo esc_url($generate_url); ?>" class="button button-primary" id="llms-delete-and-recreate"><?php esc_html_e('Delete and Recreate', 'website-llms-txt'); ?></a>
+                <div id="llms-reset-progress" style="display:none;margin-top:12px;max-width:560px">
+                    <div style="height:12px;background:#eef2f7;border-radius:8px;overflow:hidden">
+                        <div id="llms-reset-progress-bar" style="height:12px;width:0;background:#0ea5e9"></div>
+                    </div>
+                    <div id="llms-reset-progress-text" style="margin-top:8px;font-weight:600">0%</div>
+                </div>
+            </div>
         </div>
         <div class="card-column">
             <div class="card">
@@ -283,27 +312,31 @@ if (isset($_GET['settings-updated']) &&
                     <?php settings_fields('llms_generator_settings'); ?>
                     <p>
                         <label>
-                            <?php esc_html_e('LLMS.txt Title', 'website-llms-txt'); ?>
+                            <b><?php esc_html_e('LLMS.txt Title', 'website-llms-txt'); ?></b>
                         </label><br/>
                         <textarea name="llms_generator_settings[llms_txt_title]" style="width: 100%;height: 40px;"><?php echo (isset($settings['llms_txt_title']) ? $settings['llms_txt_title'] : '') ?></textarea>
+                        <i><?php esc_html_e('Set a custom title for your LLMs.txt file. This will appear at the top of the generated file before any listed URLs.', 'website-llms-txt'); ?></i>
                     </p>
                     <p>
                         <label>
-                            <?php esc_html_e('LLMS.txt Description', 'website-llms-txt'); ?>
+                            <b><?php esc_html_e('LLMS.txt Description', 'website-llms-txt'); ?></b>
                         </label><br/>
                         <textarea name="llms_generator_settings[llms_txt_description]" style="width: 100%;height: 80px;"><?php echo (isset($settings['llms_txt_description']) ? $settings['llms_txt_description'] : '') ?></textarea>
+                        <i><?php esc_html_e('Optional introduction text added before the list of URLs. Use this to explain the purpose or structure of your LLMs.txt file.', 'website-llms-txt'); ?></i>
                     </p>
                     <p>
                         <label>
-                            <?php esc_html_e('LLMS.txt After Description', 'website-llms-txt'); ?>
+                            <b><?php esc_html_e('LLMS.txt After Description', 'website-llms-txt'); ?></b>
                         </label><br/>
                         <textarea name="llms_generator_settings[llms_after_txt_description]" style="width: 100%;height: 80px;"><?php echo (isset($settings['llms_after_txt_description']) ? $settings['llms_after_txt_description'] : '') ?></textarea>
+                        <i><?php esc_html_e('Optional text inserted right before the list of links or content entries. You can use it to add additional notes, context, or data usage information before the URLs begin.', 'website-llms-txt'); ?></i>
                     </p>
                     <p>
                         <label>
-                            <?php esc_html_e('LLMS.txt End File Description', 'website-llms-txt'); ?>
+                            <b><?php esc_html_e('LLMS.txt End File Description', 'website-llms-txt'); ?></b>
                         </label><br/>
                         <textarea name="llms_generator_settings[llms_end_file_description]" style="width: 100%;height: 80px;"><?php echo (isset($settings['llms_end_file_description']) ? $settings['llms_end_file_description'] : '') ?></textarea>
+                        <i><?php esc_html_e('Final text appended at the bottom of the LLMs.txt file (e.g. footer, contact, or disclaimer information).', 'website-llms-txt'); ?></i>
                     </p>
                     <?php if(!empty($settings)): ?>
                         <?php foreach($settings as $key => $value): ?>
@@ -329,7 +362,7 @@ if (isset($_GET['settings-updated']) &&
                 <form method="post" action="options.php" id="llms-settings-crawler-form">
                     <?php settings_fields('llms_generator_settings'); ?>
                     <h2><?php esc_html_e('AI Crawler Detection','website-llms-txt') ?></h2>
-                    <p><?php printf(esc_html__('Be the first to know if AI bots are reading your %1$sllms.txt%2$s file. Join the global experiment to track major AI crawlers (like GPTBot, ClaudeBot, and PerplexityBot) accessing %1$sllms.txt%2$s files across the web.','website-llms-txt'),'<code>','</code>') ?></p>
+                    <p><?php _e('Be the first to know if AI bots are reading your', 'website-llms-txt'); ?>  <code>llms.txt</code> <?php _e('file', 'website-llms-txt'); ?>. <?php _e('Join the global experiment to track major AI crawlers (like GPTBot, ClaudeBot, and PerplexityBot) accessing', 'website-llms-txt'); ?> <code>llms.txt</code> <?php _e('files across the web', 'website-llms-txt'); ?>.</p>
                     <p>
                         <label>
                             <input
@@ -343,8 +376,7 @@ if (isset($_GET['settings-updated']) &&
                         <?php esc_html_e('All data is encrypted and anonymous. The data shared includes the bot name, timestamp, and a hashed version of your domain to track LLM crawler behavior across thousands of sites. No content or personal information is collected or stored.','website-llms-txt') ?>
                     </p>
                     <p>
-                        <a href="https://www.ryanhoward.dev/p/are-ai-search-bots-actually-looking-at-llms-txt-files" target="_blank"><?php _e('Experiment details','website-llms-txt') ?></a> |
-                        <a href="https://llmstxt.ryanhoward.dev" target="_blank"><?php esc_html_e('All websites data counter','website-llms-txt') ?></a>
+                        <a href="https://completeseo.com/are-ai-bots-actually-reading-llms-txt-files/" target="_blank"><?php _e('All websites counter & experiment details','website-llms-txt') ?></a>
                     </p>
                     <?php if(!empty($settings)): ?>
                         <?php foreach($settings as $key => $value): ?>

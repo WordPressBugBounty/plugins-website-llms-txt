@@ -166,6 +166,7 @@ class LLMS_Core {
                     'include_meta' => false,
                     'include_excerpts' => false,
                     'include_taxonomies' => false,
+                    'gform_include' => false,
                     'update_frequency' => 'immediate',
                     'need_check_option' => true,
                     'llms_allow_indexing' => false,
@@ -225,6 +226,7 @@ class LLMS_Core {
         $clean['noindex_header'] = !empty($value['noindex_header']);
         $clean['include_excerpts'] = !empty($value['include_excerpts']);
         $clean['include_taxonomies'] = !empty($value['include_taxonomies']);
+        $clean['gform_include'] = !empty($value['gform_include']);
         $clean['llms_txt_title'] = !isset($value['llms_txt_title']) ? '' : $value['llms_txt_title'];
         $clean['llms_txt_description'] = !isset($value['llms_txt_description']) ? '' : $value['llms_txt_description'];
         $clean['llms_after_txt_description'] = !isset($value['llms_after_txt_description']) ? '' : $value['llms_after_txt_description'];
