@@ -877,10 +877,11 @@ class LLMS_Generator
         $sku = '';
 
         if(defined('ICL_LANGUAGE_CODE')) {
+            $language_code = $wpdb->get_var("SELECT language_code FROM {$wpdb->prefix}icl_translations WHERE element_id=" . intval($post->ID) . " AND element_type LIKE '%_" . $post->post_type . "'");
             $permalink = apply_filters(
                 'wpml_permalink',
                 get_permalink($post->ID),
-                ICL_LANGUAGE_CODE
+                $language_code
             );
         } else {
             $permalink = get_permalink($post->ID);

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Website LLMs.txt
  * Description: Generates and manages an llms.txt file, a structured, AI-ready index that helps large language models like ChatGPT, Claude, and Perplexity understand your site's most important content.
- * Version: 8.2.5
+ * Version: 8.2.6
  * Author: Ryan Howard
  * Author URI: https://completeseo.com/author/ryan-howard/
  * Text Domain: website-llms-txt
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('LLMS_VERSION', '8.2.5');
+define('LLMS_VERSION', '8.2.6');
 define('LLMS_PLUGIN_FILE', __FILE__);
 define('LLMS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('LLMS_PLUGIN_URL', plugin_dir_url(__FILE__));

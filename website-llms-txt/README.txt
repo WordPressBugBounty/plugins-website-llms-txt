@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast, seopress, aioseo
 Requires at least: 5.8
 Tested up to: 6.8.3
 Requires PHP: 7.2
-Stable tag: 8.2.5
+Stable tag: 8.2.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,16 @@ No. All telemetry is privacy-first. Local logs remain on your site. If you opt i
 
 
 == Changelog ==
+
+= 8.2.6 =
+
+🛠 Fix: Correct WPML slugs and duplicate URLs in llms.txt
+
+• Fixed an issue where original language slugs (e.g. .de) were duplicated and appeared for both original and translated pages.
+• The generator now resolves the real WPML permalink for each language, instead of reusing the source language slug.
+• Each language entry is now written with its own correct localized URL (no mixed or duplicated slugs).
+• Prevents cases where translated pages were listed with the original language URL.
+• Ensures llms.txt contains only valid, language-correct links for all WPML translations.
 
 = 8.2.5 =
 
