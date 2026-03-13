@@ -75,7 +75,7 @@ if (isset($_GET['settings-updated']) &&
                     <div id="llms-post-types-sortable" class="sortable-list">
                         <?php
                         $post_types = get_post_types(array('public' => true), 'objects');
-                        $ordered_types = array_flip($settings['post_types']); // Create lookup array
+                        $ordered_types = array_flip($settings['post_types'] ?? []); // Create lookup array
                         $unordered_types = array(); // For types not in the current order
 
                         // Separate ordered and unordered post types
@@ -99,7 +99,7 @@ if (isset($_GET['settings-updated']) &&
                                 <div class="sortable-item active" data-post-type="<?php echo esc_attr($post_type->name); ?>">
                                     <label>
                                         <input type="checkbox" name="llms_generator_settings[post_types][]" value="<?php echo esc_attr($post_type->name); ?>" checked>
-                                        <input type="text" name="llms_generator_settings[post_name][<?php echo esc_html($post_type->labels->name); ?>]" value="<?php echo $settings['post_name'][esc_html($post_type->labels->name)] ?? ''  ?>"/>
+                                        <input type="text" name="llms_generator_settings[post_name][<?php echo esc_attr($post_type->labels->name); ?>]" value="<?php echo esc_attr($settings['post_name'][$post_type->labels->name] ?? '')  ?>"/>
                                         <span class="dashicons dashicons-menu"></span>
                                         <?php echo esc_html($post_type->labels->name); ?>
                                         <small style="opacity: 0.7;">(<?php echo intval($indexed_count) . ' indexed of ' . intval($all_count); ?>)</small>
@@ -117,7 +117,7 @@ if (isset($_GET['settings-updated']) &&
                             <div class="sortable-item" data-post-type="<?php echo esc_attr($post_type->name); ?>">
                                 <label>
                                     <input type="checkbox" name="llms_generator_settings[post_types][]" value="<?php echo esc_attr($post_type->name); ?>"/>
-                                    <input type="text" name="llms_generator_settings[post_name][<?php echo esc_html($post_type->labels->name); ?>]" value="<?php echo $settings['post_name'][esc_html($post_type->labels->name)] ?? ''  ?>"/>
+                                    <input type="text" name="llms_generator_settings[post_name][<?php echo esc_attr($post_type->labels->name); ?>]" value="<?php echo esc_attr($settings['post_name'][$post_type->labels->name] ?? '')  ?>"/>
                                     <span class="dashicons dashicons-menu"></span>
                                     <?php echo esc_html($post_type->labels->name); ?>
                                     <small style="opacity: 0.7;">(<?php echo intval($indexed_count) . ' indexed of ' . intval($all_count); ?>)</small>
@@ -197,10 +197,10 @@ if (isset($_GET['settings-updated']) &&
                             <?php if(in_array($key, ['post_types', 'max_posts', 'max_words', 'include_meta', 'include_excerpts', 'detailed_content', 'include_taxonomies', 'gform_include'])) continue ?>
                             <?php if(is_array($value)): ?>
                                 <?php foreach($value as $second_key => $second_value): ?>
-                                    <input type="hidden" name="llms_generator_settings[<?= $key ?>][]" value="<?= $second_value ?>"/>
+                                    <input type="hidden" name="llms_generator_settings[<?= esc_attr($key) ?>][]" value="<?= esc_attr($second_value) ?>"/>
                                 <?php endforeach ?>
                             <?php else: ?>
-                                <input type="hidden" name="llms_generator_settings[<?= $key ?>]" value="<?= $value ?>"/>
+                                <input type="hidden" name="llms_generator_settings[<?= esc_attr($key) ?>]" value="<?= esc_attr($value) ?>"/>
                             <?php endif ?>
                         <?php endforeach ?>
                     <?php endif ?>
@@ -256,10 +256,10 @@ if (isset($_GET['settings-updated']) &&
                             <?php if(in_array($key, ['include_md_file', 'noindex_header', 'llms_allow_indexing', 'update_frequency'])) continue ?>
                             <?php if(is_array($value)): ?>
                                 <?php foreach($value as $second_key => $second_value): ?>
-                                    <input type="hidden" name="llms_generator_settings[<?= $key ?>][]" value="<?= $second_value ?>"/>
+                                    <input type="hidden" name="llms_generator_settings[<?= esc_attr($key) ?>][]" value="<?= esc_attr($second_value) ?>"/>
                                 <?php endforeach ?>
                             <?php else: ?>
-                                <input type="hidden" name="llms_generator_settings[<?= $key ?>]" value="<?= $value ?>"/>
+                                <input type="hidden" name="llms_generator_settings[<?= esc_attr($key) ?>]" value="<?= esc_attr($value) ?>"/>
                             <?php endif ?>
                         <?php endforeach ?>
                     <?php endif ?>
@@ -314,28 +314,28 @@ if (isset($_GET['settings-updated']) &&
                         <label>
                             <b><?php esc_html_e('LLMS.txt Title', 'website-llms-txt'); ?></b>
                         </label><br/>
-                        <textarea name="llms_generator_settings[llms_txt_title]" style="width: 100%;height: 40px;"><?php echo (isset($settings['llms_txt_title']) ? $settings['llms_txt_title'] : '') ?></textarea>
+                        <textarea name="llms_generator_settings[llms_txt_title]" style="width: 100%;height: 40px;"><?php echo esc_textarea($settings['llms_txt_title'] ?? '') ?></textarea>
                         <i><?php esc_html_e('Set a custom title for your LLMs.txt file. This will appear at the top of the generated file before any listed URLs.', 'website-llms-txt'); ?></i>
                     </p>
                     <p>
                         <label>
                             <b><?php esc_html_e('LLMS.txt Description', 'website-llms-txt'); ?></b>
                         </label><br/>
-                        <textarea name="llms_generator_settings[llms_txt_description]" style="width: 100%;height: 80px;"><?php echo (isset($settings['llms_txt_description']) ? $settings['llms_txt_description'] : '') ?></textarea>
+                        <textarea name="llms_generator_settings[llms_txt_description]" style="width: 100%;height: 80px;"><?php echo esc_textarea($settings['llms_txt_description'] ?? '') ?></textarea>
                         <i><?php esc_html_e('Optional introduction text added before the list of URLs. Use this to explain the purpose or structure of your LLMs.txt file.', 'website-llms-txt'); ?></i>
                     </p>
                     <p>
                         <label>
                             <b><?php esc_html_e('LLMS.txt After Description', 'website-llms-txt'); ?></b>
                         </label><br/>
-                        <textarea name="llms_generator_settings[llms_after_txt_description]" style="width: 100%;height: 80px;"><?php echo (isset($settings['llms_after_txt_description']) ? $settings['llms_after_txt_description'] : '') ?></textarea>
+                        <textarea name="llms_generator_settings[llms_after_txt_description]" style="width: 100%;height: 80px;"><?php echo esc_textarea($settings['llms_after_txt_description'] ?? '') ?></textarea>
                         <i><?php esc_html_e('Optional text inserted right before the list of links or content entries. You can use it to add additional notes, context, or data usage information before the URLs begin.', 'website-llms-txt'); ?></i>
                     </p>
                     <p>
                         <label>
                             <b><?php esc_html_e('LLMS.txt End File Description', 'website-llms-txt'); ?></b>
                         </label><br/>
-                        <textarea name="llms_generator_settings[llms_end_file_description]" style="width: 100%;height: 80px;"><?php echo (isset($settings['llms_end_file_description']) ? $settings['llms_end_file_description'] : '') ?></textarea>
+                        <textarea name="llms_generator_settings[llms_end_file_description]" style="width: 100%;height: 80px;"><?php echo esc_textarea($settings['llms_end_file_description'] ?? '') ?></textarea>
                         <i><?php esc_html_e('Final text appended at the bottom of the LLMs.txt file (e.g. footer, contact, or disclaimer information).', 'website-llms-txt'); ?></i>
                     </p>
                     <?php if(!empty($settings)): ?>
@@ -343,10 +343,10 @@ if (isset($_GET['settings-updated']) &&
                             <?php if(in_array($key, ['llms_txt_title', 'llms_txt_description', 'llms_after_txt_description', 'llms_end_file_description'])) continue ?>
                             <?php if(is_array($value)): ?>
                                 <?php foreach($value as $second_key => $second_value): ?>
-                                    <input type="hidden" name="llms_generator_settings[<?= $key ?>][]" value="<?= $second_value ?>"/>
+                                    <input type="hidden" name="llms_generator_settings[<?= esc_attr($key) ?>][]" value="<?= esc_attr($second_value) ?>"/>
                                 <?php endforeach ?>
                             <?php else: ?>
-                                <input type="hidden" name="llms_generator_settings[<?= $key ?>]" value="<?= $value ?>"/>
+                                <input type="hidden" name="llms_generator_settings[<?= esc_attr($key) ?>]" value="<?= esc_attr($value) ?>"/>
                             <?php endif ?>
                         <?php endforeach ?>
                     <?php endif ?>
@@ -354,11 +354,9 @@ if (isset($_GET['settings-updated']) &&
                 </form>
             </div>
         </div>
-        <?php
-            $tab = filter_input(INPUT_GET,'tab');
-        ?>
+        <?php $tab = sanitize_key(filter_input(INPUT_GET, 'tab')); ?>
         <div class="card-column">
-            <div class="card <?php echo $tab; ?>">
+            <div class="card <?php echo esc_attr(sanitize_key($tab)); ?>">
                 <form method="post" action="options.php" id="llms-settings-crawler-form">
                     <?php settings_fields('llms_generator_settings'); ?>
                     <h2><?php esc_html_e('AI Crawler Detection','website-llms-txt') ?></h2>
@@ -383,10 +381,10 @@ if (isset($_GET['settings-updated']) &&
                             <?php if(in_array($key, ['llms_local_log_enabled'])) continue ?>
                             <?php if(is_array($value)): ?>
                                 <?php foreach($value as $second_key => $second_value): ?>
-                                    <input type="hidden" name="llms_generator_settings[<?= $key ?>][]" value="<?= $second_value ?>"/>
+                                    <input type="hidden" name="llms_generator_settings[<?= esc_attr($key) ?>][]" value="<?= esc_attr($second_value) ?>"/>
                                 <?php endforeach ?>
                             <?php else: ?>
-                                <input type="hidden" name="llms_generator_settings[<?= $key ?>]" value="<?= $value ?>"/>
+                                <input type="hidden" name="llms_generator_settings[<?= esc_attr($key) ?>]" value="<?= esc_attr($value) ?>"/>
                             <?php endif ?>
                         <?php endforeach ?>
                     <?php endif ?>

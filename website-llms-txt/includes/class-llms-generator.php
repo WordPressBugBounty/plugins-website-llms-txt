@@ -412,13 +412,13 @@ class LLMS_Generator
         if(is_a($existing_page,'WP_Post')) {
             $output .= "# Learn more:" . get_permalink($existing_page) . "\n\n";
         }
-        $output .= "# " . (isset($settings['llms_txt_title']) && $settings['llms_txt_title'] ? $settings['llms_txt_title'] : get_bloginfo('name')) . "\n\n";
+        $output .= "# " . esc_html((isset($settings['llms_txt_title']) && $settings['llms_txt_title'] ? $settings['llms_txt_title'] : get_bloginfo('name'))) . "\n\n";
         if ($meta_description) {
-            $output .= "> " . $meta_description . "\n\n";
+            $output .= "> " . esc_html($meta_description) . "\n\n";
         }
 
         if (isset($settings['llms_after_txt_description']) && $settings['llms_after_txt_description']) {
-            $output .= "> " . $settings['llms_after_txt_description'] . "\n\n";
+            $output .= "> " . esc_html($settings['llms_after_txt_description']) . "\n\n";
         }
         $output .= "---\n\n";
         $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
@@ -465,9 +465,9 @@ class LLMS_Generator
             $post_type_obj = get_post_type_object($post_type);
             if (is_object($post_type_obj) && isset($post_type_obj->labels->name)) {
 
-                $name = $post_type_obj->labels->name;
+                $name = esc_html($post_type_obj->labels->name);
                 if(isset($this->settings['post_name'][$post_type_obj->labels->name]) && $this->settings['post_name'][$post_type_obj->labels->name]) {
-                    $name = $this->settings['post_name'][$post_type_obj->labels->name];
+                    $name = esc_html($this->settings['post_name'][$post_type_obj->labels->name]);
                 }
 
                 $this->write_file(mb_convert_encoding("\n## {$name}\n\n", 'UTF-8', 'UTF-8'));
@@ -651,7 +651,7 @@ class LLMS_Generator
 
         $settings = apply_filters('get_llms_generator_settings', []);
         if (isset($settings['llms_end_file_description']) && $settings['llms_end_file_description']) {
-            $this->write_file(mb_convert_encoding('> ' . $settings['llms_end_file_description'] . "\n\n", 'UTF-8', 'UTF-8'));
+            $this->write_file(mb_convert_encoding('> ' . esc_html($settings['llms_end_file_description']) . "\n\n", 'UTF-8', 'UTF-8'));
             $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'UTF-8'));
         }
     }
@@ -903,9 +903,9 @@ class LLMS_Generator
                 $description = wp_trim_words(strip_tags($fallback_content), 20, '...');
             }
 
-            $overview = sprintf("- [%s](%s)%s\n", $post->post_title, $permalink, $markdown . ($this->settings['include_excerpts'] && $description ? ': ' . preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $description) : ''));
+            $overview = sprintf("- [%s](%s)%s\n", esc_html($post->post_title), esc_url($permalink), esc_html($markdown) . ($this->settings['include_excerpts'] && $description ? ': ' . preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', esc_html($description)) : ''));
         } else {
-            $overview = sprintf("- [%s](%s)%s\n", $post->post_title, $permalink, $markdown . ($this->settings['include_excerpts'] ? ': ' . preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', $description) : ''));
+            $overview = sprintf("- [%s](%s)%s\n", esc_html($post->post_title), esc_url($permalink), esc_html($markdown) . ($this->settings['include_excerpts'] ? ': ' . preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', esc_html($description)) : ''));
         }
 
         $show = 1;
@@ -987,7 +987,7 @@ class LLMS_Generator
         }
 
         $excerpts = $this->remove_shortcodes($post->post_excerpt);
-        $custom_txt = get_post_meta($post->ID, '_llmstxt_custom_note', true);
+        $custom_txt = wp_kses_post(get_post_meta($post->ID, '_llmstxt_custom_note', true));
         if($custom_txt) {
             $content = $custom_txt;
         } else {

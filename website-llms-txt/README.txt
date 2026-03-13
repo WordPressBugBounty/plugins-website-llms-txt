@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast, seopress, aioseo
 Requires at least: 5.8
 Tested up to: 6.8.3
 Requires PHP: 7.2
-Stable tag: 8.2.6
+Stable tag: 8.2.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,16 @@ No. All telemetry is privacy-first. Local logs remain on your site. If you opt i
 
 
 == Changelog ==
+
+= 8.2.7 =
+
+🔒 Security: Hardened admin interface against potential XSS vectors
+
+• Improved sanitization and escaping for dynamic post type labels used in admin form fields.
+• Replaced label-based array keys with post type slugs to prevent attribute injection risks.
+• Ensures all dynamic values used in HTML attributes are properly escaped with esc_attr().
+• Prevents potential stored XSS scenarios caused by maliciously registered custom post type labels.
+• Minor stability improvements to avoid PHP notices when settings values are missing.
 
 = 8.2.6 =
 
