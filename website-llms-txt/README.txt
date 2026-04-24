@@ -1,10 +1,10 @@
 === Website LLMs.txt ===
 Contributors: ryhowa, samsonovteamwork
-Tags: llm, ai, seo, rankmath, yoast, seopress, aioseo
+Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
-Tested up to: 6.8.3
+Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.2.7
+Stable tag: 8.3.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,21 +19,21 @@ Traditional sitemaps and robots files guide search engines. But as AI-driven sys
 `llms.txt` offers that: a plain-text or Markdown list of essential public URLs, optionally annotated with titles, descriptions, and grouping, designed for AI consumption rather than general web crawling.
 
 ### Key benefits
-✅ **AI discovery readiness** — future-proof your site for AI indexing and content retrieval.
-✅ **Fully automatic** — the plugin builds and updates your `llms.txt` file on its own schedule.
-✅ **SEO plugin integration** — works seamlessly with Yoast SEO, Rank Math, SEOPress, and AIOSEO, automatically excluding content marked as *noindex* or *nofollow*.
-✅ **Advanced controls** — choose post types, customize file titles or descriptions, attach optional Markdown files, and trigger manual regeneration.
-✅ **Developer-friendly** — includes filters such as `llms_generator_get_post_meta_description` for description logic, performance tuning, and custom indexing behavior.
-✅ **AI crawler detection** — opt in to track whether GPTBot, ClaudeBot, or PerplexityBot are actually reading your site’s `llms.txt`.
-✅ **WooCommerce & multisite ready** — respects product visibility rules and scales easily across large or networked sites.
-✅ **Privacy-first experiment** — anonymous, encrypted telemetry helps reveal which bots are accessing `llms.txt` files across the web.
+✅ **AI discovery readiness**: future-proof your site for AI indexing and content retrieval.
+✅ **Fully automatic**: the plugin builds and updates your `llms.txt` file on its own schedule.
+✅ **SEO plugin integration**: works seamlessly with Yoast SEO, Rank Math, SEOPress, and AIOSEO, automatically excluding content marked as *noindex* or *nofollow*.
+✅ **Advanced controls**: choose post types, customize file titles or descriptions, attach optional Markdown files, and trigger manual regeneration.
+✅ **Developer-friendly**: includes filters such as `llms_generator_get_post_meta_description` for description logic, performance tuning, and custom indexing behavior.
+✅ **AI crawler detection**: opt in to track whether GPTBot, ClaudeBot, or PerplexityBot are actually reading your site’s `llms.txt`.
+✅ **WooCommerce & multisite ready**: respects product visibility rules and scales easily across large or networked sites.
+✅ **Privacy-first experiment**: anonymous, encrypted telemetry helps reveal which bots are accessing `llms.txt` files across the web.
 
 ### Activation & setup
 1. Activate the plugin.
 2. Visit *Settings → LLMs.txt* to configure post types, update frequency (immediate, daily, or weekly), and optional crawler logging.
 3. The plugin generates `llms.txt` (and optionally `llms-full.txt`) and serves it from your site root.
 4. Content updates trigger automatic regeneration. All noindex/nofollow rules from your SEO plugin are respected.
-5. If you enable AI crawler logging, local and global logs record each visit from known AI bots — viewable right inside your WordPress dashboard.
+5. If you enable AI crawler logging, local and global logs record each visit from known AI bots, viewable right inside your WordPress dashboard.
 
 ### Use cases for llms.txt
 - Publishers, SaaS companies, developers, and documentation sites that want to make their content easier for AI systems to interpret.
@@ -61,10 +61,10 @@ Traditional sitemaps and robots files guide search engines. But as AI-driven sys
 The plugin automatically generates and maintains your `llms.txt` file based on published content. It pulls titles and descriptions from your site, respects SEO plugin settings (Yoast SEO, Rank Math, SEOPress, and AIOSEO), and excludes anything marked as *noindex* or *nofollow*. The file is then served from your site root, ready for AI crawlers to read.
 
 = How often is llms.txt updated? =
-You can set the update frequency in the plugin settings — immediate, daily, or weekly. You can also click “Generate Now” in the admin panel to rebuild the file at any time.
+You can set the update frequency in the plugin settings: immediate, daily, or weekly. You can also click “Generate Now” in the admin panel to rebuild the file at any time.
 
 = Does this guarantee visibility in ChatGPT, Claude, or Perplexity? =
-No. There’s no guarantee that any AI model will immediately use `llms.txt`, but it’s clear that several systems — including GPTBot, ClaudeBot, and PerplexityBot — are already crawling these files. Using `llms.txt` positions your site ahead of the curve as AI indexing becomes more structured.
+No. There’s no guarantee that any AI model will immediately use `llms.txt`, but it’s clear that several systems, including GPTBot, ClaudeBot, and PerplexityBot, are already crawling these files. Using `llms.txt` positions your site ahead of the curve as AI indexing becomes more structured.
 
 = What’s the difference between llms.txt and llms-full.txt? =
 `llms.txt` is a concise, curated list of key URLs.
@@ -93,6 +93,43 @@ No. All telemetry is privacy-first. Local logs remain on your site. If you opt i
 
 
 == Changelog ==
+
+= 8.3.3 =
+
+🚀 New: Visibility Kit AI referral tracking
+
+• Connect the plugin with an email to track AI referral sessions and AI search bot indexing for your site.
+• New in-plugin "AI Search Traffic" widget showing referral session counts for ChatGPT, Claude, Gemini, and Perplexity.
+• Announcement banner renders across wp-admin inviting connection, with a persistent per-user dismiss.
+• If a domain was previously connected under a different email, the plugin now offers an inline "Take it over with this email" flow. No support ticket required.
+
+🤖 Expanded AI bot detection
+
+• Reclassified bots into user-action, search-indexing, and training categories.
+• Added ChatGPT-User, Claude-User, Perplexity-User, OAI-SearchBot, Claude-SearchBot, Applebot, TikTokSpider, Meta-ExternalFetcher, Meta-ExternalAgent, and more.
+• Detection now runs on every page load (not only /llms.txt), with per-bot-per-page-per-hour throttling on remote telemetry.
+• Local bot log format migrated to a keyed-by-bot structure with counts; existing data migrates automatically on first read.
+
+🛡️ Security and code quality
+
+• All POST/SERVER superglobal reads now use wp_unslash() with appropriate sanitizers (sanitize_text_field, sanitize_email, esc_url_raw).
+• Admin page outputs escaped with esc_attr(), esc_textarea(), and esc_html() in place of raw echo and <?= short-echo tags.
+• Translator comments added for printf'd strings containing HTML tags.
+• parse_url() → wp_parse_url(), unlink() → wp_delete_file(), strip_tags() → wp_strip_all_tags(), date() → gmdate() for UTC outputs.
+
+🧹 Housekeeping
+
+• Added VK option cleanup (embed token, connected email, summary cache) to uninstall.
+• Domain Path header now resolves to an included languages/ directory.
+• Tested up to WordPress 6.9; reduced to 5 tags for wp.org compliance.
+
+= 8.2.8 =
+
+🔧 Fixes and integrations previously staged in source control
+
+• Flywheel-aware cleanup: root llms.txt is now deleted correctly from Flywheel's split www/ directory layout on plugin deactivation and uninstall, alongside the uploads-dir copies.
+• Slim SEO integration: respects Slim SEO's per-post noindex flag when generating llms.txt, and pulls Slim SEO meta descriptions when available.
+• Multisite activation: network-wide activate handles each subsite's rewrite rules, and new subsites created afterward get rules installed automatically via wp_initialize_site.
 
 = 8.2.7 =
 
@@ -181,7 +218,7 @@ Result:
 • Added compatibility with SEOPress plugin for meta data handling.
 
 ✨ Improvement: Title Generation
-• Refactored title generation – titles are now fetched dynamically from the actual page to ensure accuracy.
+• Refactored title generation. Titles are now fetched dynamically from the actual page to ensure accuracy.
 
 ✨ Enhancement: Admin Panel UX
 • Added a progress bar for the “Generate Now” process in the admin panel for better visibility of ongoing tasks.
@@ -299,7 +336,7 @@ Result:
 🚀 New Feature & Bug Fixes
 
 • Added support for deleting the uploaded .md file directly from the meta box.
-• Fixed the behavior of the “Do not include this page in llms.txt” checkbox — now, when activated, the page is correctly excluded from the generated llms.txt file.
+• Fixed the behavior of the “Do not include this page in llms.txt” checkbox. Now, when activated, the page is correctly excluded from the generated llms.txt file.
 
 = 8.0.4 =
 
@@ -321,7 +358,7 @@ Result:
 
 • Moved the Markdown (.md) file meta box to the sidebar of the page/post edit screen for a cleaner and more consistent experience.
 • Added a “Do not include this page in llms.txt” checkbox at the page level to allow excluding individual pages/posts from llms.txt output.
-• Updated the meta box to include: llms.txt heading, .md upload field, and the new exclusion checkbox — all neatly organized.
+• Updated the meta box to include: llms.txt heading, .md upload field, and the new exclusion checkbox, all neatly organized.
 • Ensured the exclusion setting and uploaded .md file are saved correctly and reflected in llms.txt.
 • Minor UI polishing and accessibility improvements to align with WordPress admin styles.
 
@@ -330,7 +367,7 @@ Result:
 ✨ Enhancements & Options: More Flexible LLMS.txt Content Control
 
 • Changed default behavior: options Include meta information (publish date, author, etc.), Include post excerpts, and Include taxonomies (categories, tags, etc.) are now unchecked by default for cleaner output.
-• Added a new option: Include detailed content — allowing fine-grained control over whether to include detailed page/post content in the llms.txt file.
+• Added a new option: Include detailed content, allowing fine-grained control over whether to include detailed page/post content in the llms.txt file.
 • Improved settings clarity and fallback behavior when all optional content is disabled.
 
 = 8.0.0 =
@@ -341,7 +378,7 @@ Result:
 • Improved content settings: added checkboxes to control inclusion of post excerpts and meta descriptions in output, with cleaner fallback to just URL + Title when unchecked.
 • Added a dedicated “Custom LLMS.txt Content” panel in settings for defining a custom Title, Description, After Description, and End File Description.
 • Added custom description field and an additional manual entry field per page/post, both included in llms.txt.
-• Added support for attaching `.md` (Markdown) files per page/post — link to the file appears in llms.txt if enabled.
+• Added support for attaching `.md` (Markdown) files per page/post. Link to the file appears in llms.txt if enabled.
 • `.md` files are stored in a dedicated `/llms_md/` folder and linked in llms.txt for reference.
 
 = 7.1.6 =
@@ -357,7 +394,7 @@ Result:
 
 🐞 Bug Fixes & Improvements: WooCommerce, WP-Rocket, PHP Notices, and I18N
 
-• Fixed a fatal error when editing WooCommerce products (has_weight() on null) caused by the plugin calling do_shortcode() on product content — now properly checks context and avoids passing invalid post data to WooCommerce templates.
+• Fixed a fatal error when editing WooCommerce products (has_weight() on null) caused by the plugin calling do_shortcode() on product content. Now properly checks context and avoids passing invalid post data to WooCommerce templates.
 • Adjusted WP-Rocket cache clearing behavior.
 • Resolved PHP Notice in admin menu creation (add_submenu_page) by ensuring the 7th parameter is numeric (position), no longer passing invalid icon string.
 • Improved I18N (Internationalization) strings in admin-page.php for proper localization and improved translations.
@@ -389,7 +426,7 @@ Result:
 🐞 Bug Fix: Admin Menu Compatibility
 
 • Fixed a PHP notice when WP_DEBUG is enabled, caused by incorrect usage of `add_submenu_page()`
-• The submenu page no longer passes an icon name (`dashicons-media-text`) as the 7th parameter — now uses a proper numeric menu position
+• The submenu page no longer passes an icon name (`dashicons-media-text`) as the 7th parameter. Now uses a proper numeric menu position
 • Improves compatibility with WordPress >= 5.3 and prevents unnecessary log noise
 
 = 7.0.9 =
@@ -397,9 +434,9 @@ Result:
 🧠 New Feature: AI Crawler Detection
 
 • Added new admin section with detailed insights into AI bot activity on your llms.txt file
-• Introduced logging for AI crawlers like GPTBot, ClaudeBot, and PerplexityBot — including bot name and last seen timestamp
+• Introduced logging for AI crawlers like GPTBot, ClaudeBot, and PerplexityBot, including bot name and last seen timestamp
 • Added dashboard table to view recent bot visits (max 100 entries, rolling log)
-• New setting: opt in to the global AI crawler detection experiment — anonymously share bot access data (hashed domain + bot name)
+• New setting: opt in to the global AI crawler detection experiment. Anonymously share bot access data (hashed domain + bot name)
 • All telemetry is privacy-first: no content or personal data is collected or stored
 • Integrated backend support for real-time participation tracking across thousands of sites
 • Added admin banner linking to “How it works” with full experiment explanation
@@ -441,7 +478,7 @@ Result:
 
 • Resolved a critical issue that caused "Update failed. The response is not a valid JSON response." when editing or publishing posts.
 • The plugin now correctly avoids interfering with the WordPress REST API response during post save/update actions.
-• Confirmed compatibility with block editor and custom post types — post creation and updates now work reliably.
+• Confirmed compatibility with block editor and custom post types. Post creation and updates now work reliably.
 
 = 7.0.0 =
 
@@ -452,7 +489,7 @@ Result:
 • Greatly reduced server load by avoiding direct filesystem writes and enabling smarter caching.
 • File generation is now handled **asynchronously via scheduled cron jobs** to avoid UI slowdowns and improve scalability.
 • Minimized the number of filesystem write operations during LLMS.txt generation, improving reliability and performance.
-• Optimized for large-scale databases — smoother performance on sites with thousands of posts.
+• Optimized for large-scale databases. Smoother performance on sites with thousands of posts.
 
 = 6.1.2 =
 
@@ -494,8 +531,8 @@ These updates improve localization accuracy, content visibility logic, and metad
 = 6.0.6 =
 
 ✅ Persistent Dismiss for Admin Notices
-• Admin notices now store dismissal state using user meta — ensuring they remain hidden once closed.
-• No more repeated reminders across dashboard pages — smoother and less intrusive user experience.
+• Admin notices now store dismissal state using user meta, ensuring they remain hidden once closed.
+• No more repeated reminders across dashboard pages. Smoother and less intrusive user experience.
 
 🛠 Minor Code Cleanup
 • Removed outdated notice render logic.
@@ -504,7 +541,7 @@ These updates improve localization accuracy, content visibility logic, and metad
 = 6.0.5 =
 ⚡ Enhanced Performance & Clean Output
 • Database query logic fully refactored for high-speed data selection, reducing generation time by up to 70% on large sites.
-• Replaced WP_Query with direct SQL access — now works faster and avoids unnecessary overhead.
+• Replaced WP_Query with direct SQL access. Now works faster and avoids unnecessary overhead.
 • Significantly improved scalability and lower memory usage during .txt file generation.
 
 🧹 Special Character Cleanup
@@ -664,7 +701,7 @@ example.com/llms.txt/ and example.com/ai.txt/.
     • Cleaned up sitemap text formatting for better readability.
     • Hook-friendly architecture for developers.
 
-🚀 This update makes your site even more AI-ready by exposing your content through both standard and emerging LLM indexing formats — paving the way for visibility in tools like ChatGPT, Perplexity, and beyond.
+🚀 This update makes your site even more AI-ready by exposing your content through both standard and emerging LLM indexing formats, paving the way for visibility in tools like ChatGPT, Perplexity, and beyond.
 
 = 5.0.3 =
 
@@ -699,7 +736,7 @@ example.com/llms.txt/ and example.com/ai.txt/.
 	•	Ensured that only posts explicitly marked as noindex are excluded, while all others (including those with no SEO plugin data) are properly included.
 
 ✅ Improved file generation accuracy
-	•	Ensured that LLMS-related output files contain valid, expected content — reducing cases where generated files were blank due to strict filtering.
+	•	Ensured that LLMS-related output files contain valid, expected content, reducing cases where generated files were blank due to strict filtering.
 	•	Improved fallback logic for posts without SEO meta data.
 
 🚀 This update ensures that LLMS-generated files remain accurate and complete, even on sites that don’t use Rank Math, and improves overall reliability when filtering content by SEO metadata.

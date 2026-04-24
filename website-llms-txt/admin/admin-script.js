@@ -116,4 +116,153 @@ jQuery(document).ready(function($) {
         })
         .fail(function(){ $txt.text('Init request failed'); });
     });
+
+    // --- Visibility Kit Connect / Disconnect ---
+
+    var btConnectBtn = document.getElementById('vk-connect-btn');
+    var btDisconnectBtn = document.getElementById('vk-disconnect-btn');
+
+    function btShowStatus(msg, type) {
+        var el = document.getElementById('vk-connect-status');
+        if (!el) return;
+        if (!msg) { el.style.display = 'none'; return; }
+        el.style.display = 'block';
+        el.style.color = type === 'error' ? '#dc2626' : '#16a34a';
+        el.textContent = msg;
+    }
+
+    function btResetConnectBtn() {
+        btConnectBtn.disabled = false;
+        btConnectBtn.textContent = 'Start tracking';
+    }
+
+    function btRenderTakeoverPrompt(email, message) {
+        var el = document.getElementById('vk-connect-status');
+        if (!el) return;
+        el.style.display = 'block';
+        el.style.color = '#475569';
+        el.textContent = '';
+
+        var msg = document.createElement('p');
+        msg.style.margin = '0 0 8px';
+        msg.textContent = message || 'This domain is already connected under a different email.';
+        el.appendChild(msg);
+
+        var takeBtn = document.createElement('button');
+        takeBtn.type = 'button';
+        takeBtn.className = 'button vk-btn-primary';
+        takeBtn.style.marginRight = '6px';
+        takeBtn.textContent = 'Take it over with this email';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'button';
+        cancelBtn.textContent = 'Cancel';
+
+        takeBtn.addEventListener('click', function() {
+            takeBtn.disabled = true;
+            cancelBtn.disabled = true;
+            takeBtn.textContent = 'Taking over...';
+            btSubmitConnect(email, true);
+        });
+        cancelBtn.addEventListener('click', function() {
+            btShowStatus('', '');
+            btResetConnectBtn();
+        });
+
+        el.appendChild(takeBtn);
+        el.appendChild(cancelBtn);
+    }
+
+    function btSubmitConnect(email, takeover) {
+        var formData = new FormData();
+        formData.append('action', 'vk_connect');
+        formData.append('email', email);
+        formData.append('_wpnonce', LLMS_VK.nonce);
+        if (takeover) {
+            formData.append('takeover', '1');
+        }
+
+        fetch(ajaxurl, {
+            method: 'POST',
+            body: formData,
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.success) {
+                var msg = (data.data && data.data.message) || 'Connected.';
+                btShowStatus(msg, 'success');
+                setTimeout(function() { location.reload(); }, 1500);
+                return;
+            }
+
+            var payload = data.data || {};
+            if (payload && typeof payload === 'object' && payload.canTakeover) {
+                btRenderTakeoverPrompt(email, payload.message);
+                return;
+            }
+
+            var errMsg = typeof payload === 'string'
+                ? payload
+                : (payload.message || 'Connection failed. Please try again.');
+            btShowStatus(errMsg, 'error');
+            btResetConnectBtn();
+        })
+        .catch(function() {
+            btShowStatus('Connection failed. Please try again.', 'error');
+            btResetConnectBtn();
+        });
+    }
+
+    function btStartConnect() {
+        var emailInput = document.getElementById('vk-connect-email');
+        if (!emailInput) return;
+        var email = emailInput.value.trim();
+        if (!email) {
+            btShowStatus('Please enter your email address.', 'error');
+            return;
+        }
+        if (email.indexOf('@') === -1) {
+            btShowStatus('Please enter a valid email address.', 'error');
+            return;
+        }
+
+        btConnectBtn.disabled = true;
+        btConnectBtn.textContent = 'Connecting...';
+        btShowStatus('', '');
+        btSubmitConnect(email, false);
+    }
+
+    if (btConnectBtn) {
+        btConnectBtn.addEventListener('click', btStartConnect);
+
+        var vkEmailInput = document.getElementById('vk-connect-email');
+        if (vkEmailInput) {
+            vkEmailInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.keyCode === 13) {
+                    e.preventDefault();
+                    btStartConnect();
+                }
+            });
+        }
+    }
+
+    if (btDisconnectBtn) {
+        btDisconnectBtn.addEventListener('click', function() {
+            if (!confirm('Disconnect from Visibility Kit? This will stop AI referral tracking and remove the tracking script. Your dashboard data will still be available at visibilitykit.ai.')) {
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('action', 'vk_disconnect');
+            formData.append('_wpnonce', LLMS_VK.nonce);
+
+            fetch(ajaxurl, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(function() { location.reload(); })
+            .catch(function() { location.reload(); });
+        });
+    }
 });

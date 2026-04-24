@@ -9,8 +9,11 @@ class LLMS_Core {
 
     public function __construct()
     {
-        // Register activation hook
+        // Register activation hook (passes $network_wide for multisite support)
         register_activation_hook(LLMS_PLUGIN_FILE, array($this, 'activate'));
+
+        // Flush rewrite rules when a new site is created on a multisite network
+        add_action('wp_initialize_site', array($this, 'on_new_site'), 10, 1);
 
         // Initialize core functionality
         add_action('init', array($this, 'init'), 0);
@@ -27,7 +30,6 @@ class LLMS_Core {
 
         // Register settings
         add_action('admin_init', array($this, 'register_settings'));
-        add_action('admin_notices', array($this, 'llms_ai_banner_dismissed'));
 
         // Add required scripts for admin
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
@@ -35,15 +37,43 @@ class LLMS_Core {
         add_action('wp_head', array($this, 'wp_head'));
 
         add_action('all_admin_notices', array($this, 'all_admin_notices'));
+        add_action('admin_notices', array($this, 'render_vk_banner'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_notice_script'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_banner_styles'));
         add_action('wp_ajax_dismiss_llms_admin_notice', array($this, 'dismiss_llms_admin_notice'));
-        add_action('wp_ajax_dismiss_llms_ai_banner_dismissed', array($this, 'dismiss_llms_ai_banner_dismissed'));
+        add_action('wp_ajax_dismiss_llms_vk_banner', array($this, 'dismiss_llms_vk_banner'));
         add_filter('redirect_canonical', array($this, 'redirect_canonical'), 10, 2);
+    }
+
+    public function enqueue_banner_styles() {
+        wp_enqueue_style('llms-banner-styles', LLMS_PLUGIN_URL . 'admin/admin-banner.css', array(), LLMS_VERSION);
+    }
+
+    public function render_vk_banner() {
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+        if (get_user_meta(get_current_user_id(), 'llms_vk_banner_dismissed', true)) {
+            return;
+        }
+        if (get_option('vk_embed_token')) {
+            return;
+        }
+
+        $banner_href = admin_url('tools.php?page=llms-file-manager');
+        ?>
+        <div class="notice is-dismissible llms-vk-banner">
+            <p class="vk-banner-text">
+                <?php esc_html_e('Are AI platforms visiting your site?', 'website-llms-txt'); ?>
+                <a href="<?php echo esc_url($banner_href); ?>" class="vk-banner-link"><?php esc_html_e('See your tracking data', 'website-llms-txt'); ?> &rarr;</a>
+            </p>
+        </div>
+        <?php
     }
 
     public function redirect_canonical($redirect_url, $requested_url)
     {
-        $redirect = parse_url($redirect_url);
+        $redirect = wp_parse_url($redirect_url);
         $ll_redirect_path = strtolower($redirect['path']);
         if (str_contains($ll_redirect_path, 'llms')) {
             return false;
@@ -52,19 +82,10 @@ class LLMS_Core {
         return $redirect_url;
     }
 
-    public function dismiss_llms_ai_banner_dismissed() {
+    public function dismiss_llms_vk_banner() {
         check_ajax_referer('llms_dismiss_notice', 'nonce');
-        update_user_meta(get_current_user_id(), 'llms_ai_banner_dismissed', 1);
+        update_user_meta(get_current_user_id(), 'llms_vk_banner_dismissed', 1);
         wp_send_json_success();
-    }
-
-    public function llms_ai_banner_dismissed() {
-        if (get_user_meta(get_current_user_id(), 'llms_ai_banner_dismissed', true)) return;
-        $how_it_works_url = admin_url('tools.php?page=llms-file-manager&tab=how-it-works');
-        echo '<div class="notice notice-info is-dismissible llms-ai-banner">
-            <p><strong>' . esc_html__('AI Crawler Detection is here!','website-llms-txt') . '</strong> — 
-            <a href="' . esc_url($how_it_works_url) . '">' . esc_html__('How it works','website-llms-txt') . '</a></p>
-        </div>';
     }
 
     public function all_admin_notices() {
@@ -148,6 +169,10 @@ class LLMS_Core {
 
         if (defined('WPSEO_VERSION') && class_exists('WPSEO_Sitemaps')) {
             require_once LLMS_PLUGIN_DIR . 'includes/yoast.php';
+        }
+
+        if (defined('SLIM_SEO_VER')) {
+            require_once LLMS_PLUGIN_DIR . 'includes/slim-seo.php';
         }
     }
 
@@ -267,10 +292,32 @@ class LLMS_Core {
         wp_localize_script('llms-admin-script', 'LLMS_GEN', [
             'nonce' => wp_create_nonce('llms_gen_nonce'),
         ]);
+        wp_localize_script('llms-admin-script', 'LLMS_VK', [
+            'nonce' => wp_create_nonce('vk_connect_nonce'),
+        ]);
     }
 
-    public function activate() {
+    public function activate($network_wide = false) {
+        if (is_multisite() && $network_wide) {
+            foreach (get_sites(array('fields' => 'ids')) as $blog_id) {
+                switch_to_blog($blog_id);
+                $this->add_rewrite_rule();
+                flush_rewrite_rules();
+                restore_current_blog();
+            }
+        } else {
+            flush_rewrite_rules();
+        }
+    }
+
+    public function on_new_site($new_site) {
+        if (!is_plugin_active_for_network(plugin_basename(LLMS_PLUGIN_FILE))) {
+            return;
+        }
+        switch_to_blog($new_site->blog_id);
+        $this->add_rewrite_rule();
         flush_rewrite_rules();
+        restore_current_blog();
     }
 
     public function add_admin_menu() {
@@ -307,7 +354,7 @@ class LLMS_Core {
         $upload_dir = wp_upload_dir();
         $upload_path = $upload_dir['basedir'] . '/llms.txt';
         if (file_exists($upload_path)) {
-            unlink($upload_path);
+            wp_delete_file($upload_path);
         }
 
         global $wpdb;
@@ -341,7 +388,8 @@ class LLMS_Core {
 
     public function handle_llms_request() {
         $settings = apply_filters('get_llms_generator_settings', []);
-        $request_uri = isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] ? trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/') : '';
+        $raw_uri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+        $request_uri = $raw_uri ? trim(wp_parse_url($raw_uri, PHP_URL_PATH), '/') : '';
 
         if ($request_uri === 'llms.txt') {
             $disable_noindex = $settings['noindex_header'] ?? '';

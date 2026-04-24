@@ -8,96 +8,103 @@ class LLMS_Crawler
 {
     public function __construct()
     {
-        add_action('admin_init', function () {
-            $settings = apply_filters('get_llms_generator_settings', []);
-            if (!isset($settings['llms_local_log_enabled']) || !$settings['llms_local_log_enabled']) {
-                $this->send_status(0);
-            } else {
-                $this->send_status(1);
-            }
-            register_setting('llms_options_group', 'llms_crawler_options');
-        });
-
         add_action('init', array($this, 'init'));
     }
 
     public function init() {
-        if (strpos($_SERVER['REQUEST_URI'], '/llms.txt') !== false) {
-            $this->llms_check_ai_bot();
+        $settings = apply_filters('get_llms_generator_settings', []);
+        if (empty($settings['llms_local_log_enabled'])) {
+            return;
         }
+        $this->llms_check_ai_bot();
     }
 
-    public function llms_log_bot_visit($bot_name) {
+    public function llms_log_bot_visit($bot_name, $page = '/') {
+        // Update per-bot summary log (keyed by bot name)
         $log = get_option('llms_local_log', []);
-        $log = array_filter($log, fn($row) => $row['bot'] !== $bot_name);
 
-        $log[] = [
-            'bot' => $bot_name,
-            'seen' => current_time('mysql'),
+        // Handle migration from old format (array of {bot, seen})
+        if (!empty($log) && isset(reset($log)['bot']) && !is_string(key($log))) {
+            $migrated = [];
+            foreach ($log as $row) {
+                if (isset($row['bot'])) {
+                    $migrated[$row['bot']] = [
+                        'count' => $row['count'] ?? 1,
+                        'seen'  => $row['seen'] ?? '',
+                        'type'  => $row['type'] ?? '',
+                    ];
+                }
+            }
+            $log = $migrated;
+        }
+
+        $bots = $this->llms_get_known_bots();
+        $type = isset($bots[$bot_name]) ? $bots[$bot_name]['type'] : '';
+
+        $prev_count = isset($log[$bot_name]) ? (int) ($log[$bot_name]['count'] ?? 0) : 0;
+
+        $log[$bot_name] = [
+            'count' => $prev_count + 1,
+            'seen'  => current_time('mysql'),
+            'type'  => $type,
         ];
 
-        if (count($log) > 100) array_shift($log);
+        // Cap at 100 bots
+        if (count($log) > 100) {
+            $log = array_slice($log, -100, 100, true);
+        }
 
         update_option('llms_local_log', $log);
-    }
 
-    public function send_status( $active )
-    {
-        $need_send = true;
-        $domain = parse_url(home_url(), PHP_URL_HOST);
-        $site_hash = hash('sha256', $domain);
-        $enabled_status = get_option('llms_site_log_enabled_status');
-        if(isset($enabled_status[$site_hash]) && $enabled_status[$site_hash] === $active) {
-            $need_send = false;
+        // Update daily hit counter
+        $today = current_time('Y-m-d');
+        $daily = get_option('llms_bot_hits_today', ['date' => '', 'count' => 0]);
+        if ($daily['date'] !== $today) {
+            $daily = ['date' => $today, 'count' => 0];
         }
-
-        if($need_send) {
-            $array[$site_hash] = $active;
-            update_option('llms_site_log_enabled_status', $array);
-            wp_remote_post('https://llmstxt.ryanhoward.dev/api/site-status', [
-                'method'  => 'POST',
-                'timeout' => 5,
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                ],
-                'body' => wp_json_encode([
-                    'site' => $site_hash,
-                    'active'  => $active,
-                ]),
-            ]);
-        }
+        $daily['count']++;
+        update_option('llms_bot_hits_today', $daily);
     }
 
     public function llms_check_ai_bot() {
-        $settings = apply_filters('get_llms_generator_settings', []);
-        if (!isset($settings['llms_local_log_enabled']) || !$settings['llms_local_log_enabled']) {
+        $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '';
+        if (empty($user_agent)) {
             return;
         }
 
-        $domain = parse_url(home_url(), PHP_URL_HOST);
-        $site_hash = hash('sha256', $domain);
-
-        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
         $bots = $this->llms_get_known_bots();
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+        $page_path = $request_uri ? (wp_parse_url($request_uri, PHP_URL_PATH) ?: '/') : '/';
 
         foreach ($bots as $agent => $info) {
             if (stripos($user_agent, $agent) !== false) {
-                $this->llms_log_bot_visit($agent);
+                // Always log locally
+                $this->llms_log_bot_visit($agent, $page_path);
 
-                $timestamp = current_time( 'mysql' );
-                $iso_time  = date( DATE_ATOM, strtotime( $timestamp ) );
+                // Throttle remote POST: once per bot+page per hour
+                $throttle_key = 'vk_bot_' . md5($agent . $page_path);
+                if (get_transient($throttle_key)) {
+                    return;
+                }
+                set_transient($throttle_key, 1, HOUR_IN_SECONDS);
 
-                wp_remote_post('https://llmstxt.ryanhoward.dev/api/stats', [
-                    'method'  => 'POST',
-                    'timeout' => 5,
-                    'headers' => [
-                    'Content-Type' => 'application/json',
+                // Send to Visibility Kit
+                $domain = wp_parse_url(home_url(), PHP_URL_HOST);
+
+                wp_remote_post('https://api.visibilitykit.ai/api/v1/telemetry', [
+                    'method'    => 'POST',
+                    'timeout'   => 5,
+                    'blocking'  => false,
+                    'headers'   => [
+                        'Content-Type' => 'application/json',
                     ],
-                    'body'    => wp_json_encode([
-                        'bot'  => $agent,
-                        'site' => $site_hash,
-                        'slug' => $info['slug'],
-                        'date'  => $iso_time,
+                    'body' => wp_json_encode([
+                        'domain'        => $domain,
+                        'bot'           => $agent,
+                        'botType'       => $info['type'],
+                        'page'          => $page_path,
+                        'timestamp'     => gmdate(DATE_ATOM),
+                        'pluginVersion' => defined('LLMS_VERSION') ? LLMS_VERSION : 'unknown',
                     ]),
                 ]);
 
@@ -107,23 +114,47 @@ class LLMS_Crawler
     }
 
     public function llms_get_known_bots() {
+        // Order matters: more specific patterns must come before less specific ones
+        // (e.g. OAI-SearchBot before GPTBot, Claude-SearchBot before ClaudeBot)
         return [
-            'GPTBot' => ['slug' => 'gptbot', 'type' => 'confirmed_ai'],
-            'ChatGPT-User' => ['slug' => 'chatgpt_user', 'type' => 'confirmed_ai'],
-            'ClaudeBot' => ['slug' => 'claudebot', 'type' => 'confirmed_ai'],
-            'Claude-Web' => ['slug' => 'claude_web', 'type' => 'confirmed_ai'],
-            'Anthropic' => ['slug' => 'anthropic', 'type' => 'confirmed_ai'],
-            'PerplexityBot' => ['slug' => 'perplexity', 'type' => 'confirmed_ai'],
-            'MistralAI-User' => ['slug' => 'mistralai', 'type' => 'confirmed_ai'],
-            'Bytespider' => ['slug' => 'bytespider', 'type' => 'possible_ai'],
-            'Amazonbot' => ['slug' => 'amazonbot', 'type' => 'possible_ai'],
-            'Google-Extended' => ['slug' => 'google_extended', 'type' => 'confirmed_ai'],
-            'GoogleOther' => ['slug' => 'googleother', 'type' => 'possible_ai'],
-            'Googlebot' => ['slug' => 'googlebot', 'type' => 'standard'],
-            'Bingbot' => ['slug' => 'bingbot', 'type' => 'standard'],
-            'AhrefsBot' => ['slug' => 'ahrefsbot', 'type' => 'standard'],
-            'SemrushBot' => ['slug' => 'semrushbot', 'type' => 'standard'],
-            'CCBot' => [ 'slug' => 'ccbot', 'type' => 'confirmed_ai' ],
+            // OpenAI
+            'OAI-SearchBot'       => ['slug' => 'oai_searchbot',       'type' => 'search'],
+            'ChatGPT-User'        => ['slug' => 'chatgpt_user',        'type' => 'user_action'],
+            'GPTBot'              => ['slug' => 'gptbot',              'type' => 'training'],
+
+            // Anthropic
+            'Claude-SearchBot'    => ['slug' => 'claude_searchbot',    'type' => 'search'],
+            'Claude-User'         => ['slug' => 'claude_user',         'type' => 'user_action'],
+            'ClaudeBot'           => ['slug' => 'claudebot',           'type' => 'training'],
+            'Claude-Web'          => ['slug' => 'claude_web',          'type' => 'training'],
+
+            // Perplexity
+            'PerplexityBot'       => ['slug' => 'perplexitybot',       'type' => 'search'],
+            'Perplexity-User'     => ['slug' => 'perplexity_user',     'type' => 'user_action'],
+
+            // Meta
+            'Meta-ExternalFetcher' => ['slug' => 'meta_externalfetcher', 'type' => 'user_action'],
+            'Meta-ExternalAgent'   => ['slug' => 'meta_externalagent',   'type' => 'training'],
+
+            // Mistral
+            'MistralAI-User'      => ['slug' => 'mistralai_user',      'type' => 'user_action'],
+
+            // Google
+            'Google-Extended'     => ['slug' => 'google_extended',     'type' => 'training'],
+            'GoogleOther'         => ['slug' => 'googleother',         'type' => 'search'],
+
+            // Apple
+            'Applebot'            => ['slug' => 'applebot',            'type' => 'search'],
+
+            // Amazon
+            'Amazonbot'           => ['slug' => 'amazonbot',           'type' => 'search'],
+
+            // Other
+            'Bytespider'          => ['slug' => 'bytespider',          'type' => 'training'],
+            'CCBot'               => ['slug' => 'ccbot',               'type' => 'training'],
+            'TikTokSpider'        => ['slug' => 'tiktokspider',        'type' => 'user_action'],
+            'PetalBot'            => ['slug' => 'petalbot',            'type' => 'search'],
+            'YouBot'              => ['slug' => 'youbot',              'type' => 'search'],
         ];
     }
 }

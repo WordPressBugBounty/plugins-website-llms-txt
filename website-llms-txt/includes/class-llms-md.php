@@ -83,7 +83,7 @@ class LLMS_MD
                 <p><?php esc_html_e('Upload a .md file for this page/post.', 'website-llms-txt'); ?></p>
                 <input type="file" name="md_file">
                 <?php if ( $md_url ) : ?>
-                    <p><?php esc_html_e('Current:', 'website-llms-txt'); ?> <a href="<?= esc_url( $md_url ) ?>" target="_blank"><?= basename( $md_url ) ?></a></p>
+                    <p><?php esc_html_e('Current:', 'website-llms-txt'); ?> <a href="<?php echo esc_url( $md_url ); ?>" target="_blank"><?php echo esc_html( basename( $md_url ) ); ?></a></p>
                 <?php endif; ?>
                 <?php if($md_url): ?>
                     <button type="submit" name="delete_md_file" value="1" class="button button-secondary">
@@ -92,7 +92,7 @@ class LLMS_MD
                 <?php endif; ?>
                 <hr style="margin: 15px 0;">
                 <p><strong><?php esc_html_e('Custom llms.txt text', 'website-llms-txt'); ?></strong></p>
-                <textarea name="llmstxt_custom_note" rows="4" style="width:100%;"><?= esc_textarea($custom_txt); ?></textarea>
+                <textarea name="llmstxt_custom_note" rows="4" style="width:100%;"><?php echo esc_textarea($custom_txt); ?></textarea>
                 <p class="description"><?php esc_html_e('This text will be included in the llms.txt output for this post.', 'website-llms-txt'); ?></p>
                 <?php
             },null,'side' );
@@ -104,7 +104,7 @@ class LLMS_MD
             return;
         }
 
-        if ( ! isset( $_POST['md_file_nonce'] ) || ! wp_verify_nonce( $_POST['md_file_nonce'], 'save_md_file' ) ) {
+        if ( ! isset( $_POST['md_file_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['md_file_nonce'] ) ), 'save_md_file' ) ) {
             return;
         }
 
@@ -115,7 +115,7 @@ class LLMS_MD
         }
 
         if ( isset( $_POST['llmstxt_custom_note'] ) ) {
-            update_post_meta($post_id, '_llmstxt_custom_note', sanitize_textarea_field($_POST['llmstxt_custom_note']));
+            update_post_meta($post_id, '_llmstxt_custom_note', sanitize_textarea_field( wp_unslash( $_POST['llmstxt_custom_note'] ) ));
         } else {
             delete_post_meta( $post_id, '_llmstxt_custom_note' );
         }
@@ -126,7 +126,7 @@ class LLMS_MD
             if ( $md_url ) {
                 $md_path = $this->get_path_from_url( $md_url );
                 if ( file_exists( $md_path ) ) {
-                    unlink( $md_path );
+                    wp_delete_file( $md_path );
                 }
                 delete_post_meta( $post_id, '_md_url' );
             }

@@ -47,10 +47,11 @@ class LLMS_Yoast_Integration {
 
     public function maybe_generate_sitemap() {
         if(isset($_SERVER['REQUEST_URI'])) {
-            $request_uri = parse_url($_SERVER['REQUEST_URI']);
+            $request_uri = wp_parse_url(esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])));
             if (isset($request_uri['path']) && $request_uri['path'] == '/llms-sitemap.xml') {
                 status_header(200);
                 header('Content-Type: application/xml; charset=utf-8');
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- generate_sitemap() returns XML with all dynamic values pre-escaped via esc_url / esc_xml.
                 echo $this->generate_sitemap();
                 exit;
             }
@@ -83,16 +84,21 @@ class LLMS_Yoast_Integration {
             $priority = esc_xml($url['priority']);
 
 
-            $sitemap = <<<SEO
-<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-    <url>
-        <loc>{$loc}</loc>
-        <lastmod>{$lastmod}</lastmod>
-        <changefreq>{$changefreq}</changefreq>
-        <priority>{$priority}</priority>
-    </url>
-</urlset>
-SEO;
+            $sitemap = sprintf(
+                '<urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">' . "\n" .
+                '    <url>' . "\n" .
+                '        <loc>%1$s</loc>' . "\n" .
+                '        <lastmod>%2$s</lastmod>' . "\n" .
+                '        <changefreq>%3$s</changefreq>' . "\n" .
+                '        <priority>%4$s</priority>' . "\n" .
+                '    </url>' . "\n" .
+                '</urlset>',
+                $loc,
+                $lastmod,
+                $changefreq,
+                $priority
+            );
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Yoast sitemap renderer emits pre-escaped XML.
             echo (new WPSEO_Sitemaps_Renderer())->get_output( $sitemap );
         }
     }

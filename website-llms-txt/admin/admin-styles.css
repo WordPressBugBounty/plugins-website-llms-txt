@@ -43,25 +43,399 @@
     margin-bottom: 15px;
 }
 
-.card.how-it-works {
-    border: 2px solid #72aee6;
-}
-
+/* --- Two-column layout --- */
 .card-wrap {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
     gap: 20px;
     width: 100%;
+    align-items: flex-start;
 }
 
-@media (max-width: 800px) {
+.card-wrap > .card-column:first-child {
+    flex: 0 1 550px;
+    min-width: 0;
+}
+
+.card-wrap > .card-column:last-child {
+    flex: 0 1 700px;
+    min-width: 0;
+}
+
+@media (max-width: 1200px) {
     .card-wrap {
-        grid-template-columns: repeat(2, 1fr);
+        flex-direction: column;
+    }
+    .card-wrap > .card-column:first-child,
+    .card-wrap > .card-column:last-child {
+        flex: 1 1 auto;
+        max-width: 100%;
     }
 }
 
-@media (max-width: 600px) {
-    .card-wrap {
-        grid-template-columns: repeat(1, 1fr);
-    }
+.card-column .card {
+    margin-top: 0;
+    margin-bottom: 20px;
+    max-width: none;
+    border-radius: 8px;
+    padding-bottom: 20px;
+}
+
+/* --- Visibility Kit brand color --- */
+.vk-btn-primary {
+    background: #0070ff !important;
+    border-color: #005cd9 !important;
+    color: #fff !important;
+}
+
+.vk-btn-primary:hover,
+.vk-btn-primary:focus {
+    background: #005cd9 !important;
+    border-color: #005cd9 !important;
+}
+
+.vk-link {
+    color: #0070ff;
+}
+
+.vk-link:hover {
+    color: #005cd9;
+}
+
+/* --- Bot type badges --- */
+.vk-ai-badge {
+    background: #e8f1ff;
+    color: #0070ff;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-left: 4px;
+    font-weight: 500;
+}
+
+.vk-possible-badge {
+    background: #fff7ed;
+    color: #c2410c;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-left: 4px;
+    font-weight: 500;
+}
+
+.vk-standard-badge {
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-left: 4px;
+    font-weight: 500;
+}
+
+/* --- Stats highlight card --- */
+.vk-stats-card {
+    background: #e8f1ff;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.vk-stats-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.1;
+}
+
+.vk-stats-label {
+    color: #64748b;
+    font-size: 13px;
+    margin-top: 2px;
+}
+
+.vk-stats-sub {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+/* --- Gradient border (announcement banner) --- */
+.vk-gradient-border {
+    position: relative;
+    border-radius: 8px;
+    padding: 2px;
+    background: linear-gradient(135deg, #37e084, #01d101);
+}
+
+.vk-gradient-inner {
+    background: #fff;
+    border-radius: 6px;
+    padding: 14px 18px;
+}
+
+/* --- CTA button (full-width, prominent) --- */
+.vk-cta-btn {
+    display: block;
+    width: 100%;
+    padding: 12px 28px !important;
+    font-size: 15px !important;
+    height: auto !important;
+    line-height: 1.4 !important;
+    border-radius: 6px !important;
+    text-align: center;
+    text-decoration: none;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+/* --- Feature checklist --- */
+.vk-feature-list {
+    list-style: none;
+    margin: 20px 0 0;
+    padding: 0 0 15px;
+}
+
+.vk-feature-list li {
+    font-size: 14px;
+    color: #475569;
+    padding: 3px 0;
+}
+
+.vk-feature-list li::before {
+    content: '\2713';
+    color: #22c55e;
+    font-weight: 700;
+    margin-right: 8px;
+}
+
+/* --- Connected badge --- */
+.vk-connected-badge {
+    color: #22c55e;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* --- Big four source list --- */
+.vk-source-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    border-top: 1px solid #e2e8f0;
+}
+
+.vk-source-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 4px;
+    border-bottom: 1px solid #e2e8f0;
+    margin: 0;
+    font-size: 13px;
+}
+
+.vk-source-name {
+    color: #1e293b;
+    font-weight: 500;
+}
+
+.vk-source-count {
+    color: #475569;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+/* --- Secondary stats row --- */
+.vk-secondary-stats {
+    font-size: 13px;
+    color: #94a3b8;
+    margin: 12px 0;
+}
+
+/* --- Disconnect text link (subtle) --- */
+.vk-disconnect-link {
+    font-size: 12px;
+    color: #94a3b8;
+    text-decoration: none;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.vk-disconnect-link:hover {
+    color: #64748b;
+    text-decoration: underline;
+}
+
+/* --- No data fallback --- */
+.vk-no-data {
+    font-size: 13px;
+    color: #94a3b8;
+    padding: 12px 0;
+}
+
+/* --- Bot table --- */
+.vk-bot-table {
+    margin-bottom: 16px;
+}
+
+.vk-bot-table thead tr {
+    background: #f9fafb;
+}
+
+.vk-bot-table th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #64748b;
+}
+
+/* --- Caching note --- */
+.vk-caching-note {
+    font-size: 12px;
+    color: #94a3b8;
+    max-width: 600px;
+}
+
+/* --- Tracking form meta text --- */
+.vk-meta-text {
+    font-size: 90%;
+    max-width: 600px;
+    color: #475569;
+}
+
+/* --- Pitch card gradient border --- */
+.vk-pitch-card-border {
+    margin-bottom: 20px;
+}
+
+.vk-pitch-card-border .vk-pitch-card {
+    margin-bottom: 0;
+    border: none;
+    box-shadow: none;
+}
+
+.vk-pitch-card h2 {
+    font-size: 22px;
+}
+
+/* --- Not-connected status line --- */
+.vk-status-not-active {
+    color: #d97706;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 4px 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.vk-status-not-active svg {
+    flex-shrink: 0;
+}
+
+/* --- Inline connect form --- */
+.vk-connect-inline {
+    display: flex;
+    gap: 8px;
+    margin: 20px 0 8px;
+}
+
+.vk-connect-inline input[type="email"] {
+    flex: 1;
+    height: 50px;
+    padding: 0 12px;
+    font-size: 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    outline: none;
+    box-sizing: border-box;
+    margin-bottom: 12px;
+}
+
+.vk-connect-inline input[type="email"]::placeholder {
+    color: #94a3b8;
+}
+
+.vk-connect-inline input[type="email"]:focus {
+    border-color: #0070ff;
+    box-shadow: 0 0 0 2px rgba(0, 112, 255, 0.15);
+}
+
+.vk-connect-inline-btn {
+    padding: 0 34px !important;
+    font-size: 14px !important;
+    height: 50px !important;
+    line-height: 48px !important;
+    border-radius: 6px !important;
+    white-space: nowrap;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.vk-connect-hint {
+    font-size: 14px;
+    color: #475569;
+    margin: 0;
+}
+
+/* --- Connect status message --- */
+#vk-connect-status {
+    font-size: 13px;
+    margin-top: 8px;
+}
+
+/* --- Tracking Settings card --- */
+.vk-tracking-settings-card .vk-checkbox-row {
+    margin: 12px 0;
+}
+
+.vk-tracking-settings-card .vk-checkbox-row label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1e293b;
+    cursor: pointer;
+}
+
+.vk-tracking-settings-card .vk-checkbox-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin: 4px 0 0 24px;
+}
+
+.vk-tracking-settings-card .vk-disconnect-section {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 20px;
+    padding-top: 16px;
+}
+
+.vk-tracking-settings-card .vk-disconnect-section h3 {
+    font-size: 14px;
+    color: #1e293b;
+    margin: 0 0 8px;
+}
+
+.vk-tracking-settings-card .vk-disconnect-section p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0 0 12px;
+}
+
+.vk-tracking-settings-card .vk-disconnect-btn-wrap {
+    margin-bottom: 16px;
+}
+
+.vk-tracking-settings-card .vk-caching-note {
+    margin-top: 16px;
+}
+
+/* --- Button bottom padding normalization --- */
+.card .button,
+.card .button-primary,
+.card input[type="submit"] {
+    margin-bottom: 12px;
+}
+
+.card p.submit {
+    margin-bottom: 4px;
 }

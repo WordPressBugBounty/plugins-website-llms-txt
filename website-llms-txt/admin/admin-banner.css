@@ -1,0 +1,23 @@
+/* Visibility Kit top announcement banner — loaded across wp-admin */
+
+
+
+.llms-vk-banner .vk-banner-text {
+    font-size: 15px;
+}
+
+.llms-vk-banner .vk-banner-link {
+    color: #0070ff;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    margin-left: 6px;
+}
+
+.llms-vk-banner {
+    border-color: #01d101;
+}
+
+.llms-vk-banner .notice-dismiss {
+  padding: 11px 9px;
+}

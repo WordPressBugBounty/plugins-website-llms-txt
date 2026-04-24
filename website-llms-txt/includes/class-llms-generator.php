@@ -101,7 +101,7 @@ class LLMS_Generator
             return;
         }
 
-        $parsed   = parse_url( $post_url );
+        $parsed   = wp_parse_url( $post_url );
         $host     = $parsed['host'] ?? '';
 
         $response = wp_remote_get( $post_url, [
@@ -221,13 +221,14 @@ class LLMS_Generator
 
         $siteurl = get_option('siteurl');
         if($siteurl) {
-            $this->llms_name = parse_url($siteurl)['host'];
+            $this->llms_name = wp_parse_url($siteurl)['host'];
         }
 
         if (isset($this->settings['update_frequency']) && $this->settings['update_frequency'] !== 'immediate') {
             do_action('schedule_updates');
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Read-only flag check; nonce is verified by WP core's options.php handler before settings are persisted.
         if (isset($_POST['llms_generator_settings'], $_POST['llms_generator_settings']['update_frequency']) || $force) {
             wp_clear_scheduled_hook('llms_update_llms_file_cron');
             wp_schedule_single_event(time() + 30, 'llms_update_llms_file_cron');
@@ -448,7 +449,7 @@ class LLMS_Generator
         $clean = preg_replace('/\s{2,}/u', ' ', $clean);
         $clean = preg_replace('/[\r\n]+/', "\n", $clean);
 
-        return trim(strip_tags($clean));
+        return trim(wp_strip_all_tags($clean));
     }
 
     private function generate_overview()
@@ -583,8 +584,8 @@ class LLMS_Generator
                                 $output .= "> " . wp_trim_words($data->meta, $this->settings['max_words'] ?? 250, '...') . "\n\n";
                             }
 
-                            $output .= "- Published: " . esc_html(date('Y-m-d', strtotime($data->published))) . "\n";
-                            $output .= "- Modified: " . esc_html(date('Y-m-d', strtotime($data->modified))) . "\n";
+                            $output .= "- Published: " . esc_html(gmdate('Y-m-d', strtotime($data->published))) . "\n";
+                            $output .= "- Modified: " . esc_html(gmdate('Y-m-d', strtotime($data->modified))) . "\n";
                             $output .= "- URL: " . esc_html($data->link) . "\n";
 
                             if ($data->sku) {
@@ -686,7 +687,7 @@ class LLMS_Generator
             }
 
             $description = $this->remove_shortcodes(str_replace(']]>', ']]&gt;', apply_filters('the_content', $description)));
-            $description = wp_trim_words(strip_tags(preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}-\x{202E}\x{2060}]/u', ' ', html_entity_decode($description))), 30, '');
+            $description = wp_trim_words(wp_strip_all_tags(preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}\x{202A}-\x{202E}\x{2060}]/u', ' ', html_entity_decode($description))), 30, '');
         }
 
         return apply_filters('llms_generator_get_site_meta_description', $description);
@@ -779,7 +780,7 @@ class LLMS_Generator
             return '';
         }
 
-        $parsed = parse_url( $url );
+        $parsed = wp_parse_url( $url );
         $host   = $parsed['host'] ?? '';
 
         $resp = wp_remote_get( $url, [
@@ -818,7 +819,7 @@ class LLMS_Generator
         if (!current_user_can('manage_options')) wp_send_json_error('Permission denied');
         check_ajax_referer('llms_gen_nonce');
 
-        $qid = sanitize_text_field($_POST['queue_id'] ?? '');
+        $qid = isset($_POST['queue_id']) ? sanitize_text_field(wp_unslash($_POST['queue_id'])) : '';
         if (!$qid) wp_send_json_error('Missing queue_id');
 
         $state = get_transient($qid);
@@ -900,7 +901,7 @@ class LLMS_Generator
             if($this->settings['include_excerpts']) {
                 $fallback_content = $this->remove_shortcodes(apply_filters( 'get_the_excerpt', $post->post_excerpt, $post ) ?: get_the_content(null, false, $post));
                 $fallback_content = $this->content_cleaner->clean($fallback_content);
-                $description = wp_trim_words(strip_tags($fallback_content), 20, '...');
+                $description = wp_trim_words(wp_strip_all_tags($fallback_content), 20, '...');
             }
 
             $overview = sprintf("- [%s](%s)%s\n", esc_html($post->post_title), esc_url($permalink), esc_html($markdown) . ($this->settings['include_excerpts'] && $description ? ': ' . preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', ' ', esc_html($description)) : ''));
@@ -986,12 +987,20 @@ class LLMS_Generator
             }
         }
 
+        if (defined('SLIM_SEO_VER')) {
+            $slim_seo = get_post_meta($post_id, 'slim_seo', true);
+            if (!empty($slim_seo['noindex'])) {
+                $show = 0;
+            }
+        }
+
         $excerpts = $this->remove_shortcodes($post->post_excerpt);
         $custom_txt = wp_kses_post(get_post_meta($post->ID, '_llmstxt_custom_note', true));
         if($custom_txt) {
             $content = $custom_txt;
         } else {
             ob_start();
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Output is captured via ob_get_clean() for further processing, not sent to the browser.
             echo $this->content_cleaner->clean($this->remove_emojis( $this->remove_shortcodes(do_shortcode(get_the_content(null, false, $post)))));
             $content = ob_get_clean();
         }
