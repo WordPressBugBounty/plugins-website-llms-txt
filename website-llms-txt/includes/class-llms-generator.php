@@ -940,7 +940,7 @@ class LLMS_Generator
         }
 
         $use_yoast = class_exists('WPSEO_Meta');
-        $use_rankmath = function_exists('rank_math');
+        $use_rankmath = function_exists('rank_math') && isset(rank_math()->variables);
         if($use_yoast) {
             $robots_noindex = get_post_meta($post_id, '_yoast_wpseo_meta-robots-noindex', true);
             $robots_nofollow = get_post_meta($post_id, '_yoast_wpseo_meta-robots-nofollow', true);

@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.3.3
+Stable tag: 8.3.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,12 @@ No. All telemetry is privacy-first. Local logs remain on your site. If you opt i
 
 
 == Changelog ==
+
+= 8.3.4 =
+
+🐛 Fix
+
+• Resolves a fatal error ("Call to a member function setup() on null") that could occur when Rank Math is active but its setup wizard has not been completed. The Rank Math integration now also checks that `rank_math()->variables` is initialized before calling it. Thanks to the reporter on the wp.org support forum.
 
 = 8.3.3 =
 
