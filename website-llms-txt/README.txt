@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.3.4
+Stable tag: 8.4.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -93,6 +93,15 @@ No. All telemetry is privacy-first. Local logs remain on your site. If you opt i
 
 
 == Changelog ==
+
+= 8.4.0 =
+
+🤖 Server-side bot classification
+
+• Bot taxonomy is now sourced from the Visibility Kit API (cached for 24h via a transient) rather than baked into the plugin. New bots and reclassifications take effect without a plugin update.
+• Telemetry payloads now include the raw User-Agent string. The server is the source of truth for bot/botType.
+• Bundled fallback list still ships with the plugin so detection keeps working when the API is unreachable.
+• Internal: per-page-load detection now iterates the API list in (priority DESC, length DESC) order so longer/more-specific UA matches win.
 
 = 8.3.4 =
 
