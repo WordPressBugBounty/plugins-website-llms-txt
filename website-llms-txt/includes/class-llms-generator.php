@@ -409,7 +409,7 @@ class LLMS_Generator
         }
         $slug = 'ai-sitemap';
         $existing_page = get_page_by_path( $slug );
-        $output = "\xEF\xBB\xBF"; // UTF-8 BOM
+        $output = ''; // No BOM: keep the file as clean UTF-8 so the first byte is the H1 marker
         if(is_a($existing_page,'WP_Post')) {
             $output .= "# Learn more:" . get_permalink($existing_page) . "\n\n";
         }
@@ -421,7 +421,6 @@ class LLMS_Generator
         if (isset($settings['llms_after_txt_description']) && $settings['llms_after_txt_description']) {
             $output .= "> " . esc_html($settings['llms_after_txt_description']) . "\n\n";
         }
-        $output .= "---\n\n";
         $this->write_file(mb_convert_encoding($output, 'UTF-8', 'UTF-8'));
         unset($output);
         unset($meta_description);
@@ -515,7 +514,7 @@ class LLMS_Generator
 
             } while (!empty($posts) && !$exit);
 
-            $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'UTF-8'));
+            $this->write_file(mb_convert_encoding("\n", 'UTF-8', 'UTF-8'));
 
             if (defined('WP_CLI') && WP_CLI) {
                 \WP_CLI::log('End generate overview');
@@ -624,7 +623,7 @@ class LLMS_Generator
                         }
 
                         if(isset($this->settings['detailed_content']) && $this->settings['detailed_content'] || isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] || isset($this->settings['include_taxonomies']) && $this->settings['include_taxonomies'] || isset($this->settings['include_meta']) && $this->settings['include_meta']) {
-                            $output .= "---\n\n";
+                            $output .= "\n";
                         }
                         unset($data);
 
@@ -642,7 +641,7 @@ class LLMS_Generator
             } while (!empty($posts) && !$exit);
 
             if(isset($this->settings['detailed_content']) && $this->settings['detailed_content'] || isset($this->settings['include_excerpts']) && $this->settings['include_excerpts'] || isset($this->settings['include_taxonomies']) && $this->settings['include_taxonomies'] || isset($this->settings['include_meta']) && $this->settings['include_meta']) {
-                $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'UTF-8'));
+                $this->write_file(mb_convert_encoding("\n", 'UTF-8', 'UTF-8'));
             }
 
             if (defined('WP_CLI') && WP_CLI) {
@@ -653,7 +652,6 @@ class LLMS_Generator
         $settings = apply_filters('get_llms_generator_settings', []);
         if (isset($settings['llms_end_file_description']) && $settings['llms_end_file_description']) {
             $this->write_file(mb_convert_encoding('> ' . esc_html($settings['llms_end_file_description']) . "\n\n", 'UTF-8', 'UTF-8'));
-            $this->write_file(mb_convert_encoding("\n---\n\n", 'UTF-8', 'UTF-8'));
         }
     }
 

@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.4.0
+Stable tag: 8.4.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -37,7 +37,7 @@ Traditional sitemaps and robots files guide search engines. But as AI-driven sys
 
 ### Use cases for llms.txt
 - Publishers, SaaS companies, developers, and documentation sites that want to make their content easier for AI systems to interpret.
-- SEO-driven websites teting AI engine optimization tactics.
+- SEO-driven websites testing AI engine optimization tactics.
 - Agencies and site owners preparing for the next phase of AI search and retrieval.
 
 ### The llms.txt experiment & further reading
@@ -91,8 +91,23 @@ Yes. Filters such as `llms_generator_get_post_meta_description` and others allow
 = Is any personal data shared when I enable crawler logging? =
 No. All telemetry is privacy-first. Local logs remain on your site. If you opt into the public experiment, only anonymized data (bot name, timestamp, and a hashed version of your domain) is shared. No content, user, or identifiable data is ever transmitted.
 
+= Does the plugin set any cookies, and is the Visibility Kit connection optional? =
+Out of the box, the plugin sets no cookies and loads no third-party scripts. The optional Visibility Kit integration is strictly opt-in: nothing is added to your site until an administrator enters an email address and clicks **Connect to Visibility Kit** in the plugin settings. Only after you connect does the plugin load the Visibility Kit script (`vk.js`), which sets first-party analytics cookies (`_vk_vid`, `_vk_session_id`, `_vk_attr_first`, `_vk_landing`, `_vk_referrer`) used to attribute AI-referred visits. You can remove the script and stop the cookies at any time with **Disconnect from Visibility Kit** in the settings. If you use a Consent Management Platform (Cookiebot, Complianz, etc.), connect only after wiring the script into your consent flow so the cookies fire after consent, and declare the `_vk_*` cookies in your cookie policy. AI bot tracking is a separate setting that is off by default and sets no visitor cookies.
+
+= Does it work on WordPress Multisite? =
+Yes. On a network-activated install, each subsite gets its own rewrite rules, and sites created later have rules registered automatically. The plugin also detects Multisite when deciding whether to write `llms.txt` to the site root, so each subsite serves its own file at its own URL.
+
 
 == Changelog ==
+
+= 8.4.1 =
+
+🐛 Fixes & compliance
+
+• Removed the `---` horizontal-rule separators from the generated `llms.txt`. Some validators (Google Lighthouse "Agent Accessibility", Semrush Site Audit) read an early `---` as a YAML front-matter delimiter and discarded the `# Title`, reporting a false "missing H1". The file now uses `##` section headings only, matching the llmstxt.org format. Thanks to the reporter on the wp.org support forum.
+• Removed the UTF-8 byte-order mark (BOM) from the start of the file. The first byte is now the `#` H1 marker, which further improves compatibility with strict Markdown and llms.txt validators.
+• Documentation: added FAQ entries clarifying that the plugin sets no cookies until you opt in to Visibility Kit, listing the `_vk_*` cookies for cookie-policy/CMP declaration, and confirming WordPress Multisite support.
+• Condensed older changelog entries (7.1.6 and earlier) to stay within wp.org's readme length limit.
 
 = 8.4.0 =
 
@@ -396,403 +411,6 @@ Result:
 • Added support for attaching `.md` (Markdown) files per page/post. Link to the file appears in llms.txt if enabled.
 • `.md` files are stored in a dedicated `/llms_md/` folder and linked in llms.txt for reference.
 
-= 7.1.6 =
+= Older versions =
 
-🐞 Bug Fixes & Enhancements: Stability, Indexing, and Compatibility
-
-• Fixed PHP warning for undefined llms_allow_indexing key in yoast.php, added proper default handling.
-• Improved compatibility with Yoast SEO & RankMath by checking settings arrays before use.
-• Enhanced fallback handling for missing meta descriptions and cleaned up fallback output in generated files.
-• Minor code refactoring for better PHP 8.2+ compatibility and reduced log noise.
-
-= 7.1.5 =
-
-🐞 Bug Fixes & Improvements: WooCommerce, WP-Rocket, PHP Notices, and I18N
-
-• Fixed a fatal error when editing WooCommerce products (has_weight() on null) caused by the plugin calling do_shortcode() on product content. Now properly checks context and avoids passing invalid post data to WooCommerce templates.
-• Adjusted WP-Rocket cache clearing behavior.
-• Resolved PHP Notice in admin menu creation (add_submenu_page) by ensuring the 7th parameter is numeric (position), no longer passing invalid icon string.
-• Improved I18N (Internationalization) strings in admin-page.php for proper localization and improved translations.
-• Added minor UI fixes and cleaned up wording in the admin area.
-
-✅ Recommended upgrade if you use WooCommerce, Divi theme, or WP-Rocket, and/or run with WP_DEBUG enabled.
-🎯 Thanks to all users who reported and helped debug these issues!
-
-= 7.1.4 =
-
-🐞 Bug Fixes: Generator Stability and PHP 8.x Compatibility
-
-• Fixed PHP warnings about undefined `$output` variable in `class-llms-generator.php` when generating LLMS data
-• Fixed deprecated usage of `mb_convert_encoding()` with null input on line 428
-• Ensures `$output` is always initialized before being used and passed to `mb_convert_encoding()`
-• Improved error handling when no content is available to write during generation
-• Verified compatibility with PHP 8.1 and 8.2 to prevent log noise and execution failures
-
-= 7.1.1 =
-
-🐞 Bug Fix: LLMS Crawler Activation
-
-• Fixed an issue where the LLMS Crawler feature was not activating correctly after plugin installation or settings update
-• Ensures that the crawler logging toggle properly saves and reflects the current state in the admin UI
-• Improved reliability of the global experiment opt-in status
-
-= 7.1.0 =
-
-🐞 Bug Fix: Admin Menu Compatibility
-
-• Fixed a PHP notice when WP_DEBUG is enabled, caused by incorrect usage of `add_submenu_page()`
-• The submenu page no longer passes an icon name (`dashicons-media-text`) as the 7th parameter. Now uses a proper numeric menu position
-• Improves compatibility with WordPress >= 5.3 and prevents unnecessary log noise
-
-= 7.0.9 =
-
-🧠 New Feature: AI Crawler Detection
-
-• Added new admin section with detailed insights into AI bot activity on your llms.txt file
-• Introduced logging for AI crawlers like GPTBot, ClaudeBot, and PerplexityBot, including bot name and last seen timestamp
-• Added dashboard table to view recent bot visits (max 100 entries, rolling log)
-• New setting: opt in to the global AI crawler detection experiment. Anonymously share bot access data (hashed domain + bot name)
-• All telemetry is privacy-first: no content or personal data is collected or stored
-• Integrated backend support for real-time participation tracking across thousands of sites
-• Added admin banner linking to “How it works” with full experiment explanation
-
-= 7.0.8 =
-
-🛠 Improvements & Fixes
-- File Status section now conditionally displays links (e.g. sitemap) only when relevant settings are enabled
-- Prevents broken links when sitemap inclusion is not selected
-- Minor UI consistency improvements
-
-= 7.0.4 =
-
-🛠️ Bug Fixes & Enhancements
-
-• Added X-Robots-Tag: noindex header for llms.txt by default to discourage indexing by search engines.
-• Introduced a checkbox setting to optionally disable the noindex header (not recommended).
-• Cleaned up plugin description for clarity and removed outdated marketing language.
-• Minor internal code improvements for consistency and maintainability.
-
-= 7.0.3 =
-
-🛠️ Bug Fixes & Improvements
-
-• Added support for excluding llms.txt from sitemaps by default to prevent unintended indexing by search engines.
-• Introduced an optional checkbox in settings to allow manual inclusion of llms.txt in the sitemap, with a clear SEO warning.
-• On plugin deactivation, scheduled tasks related to llms.txt are now properly cleared and the file is removed from the site root to avoid stale exposure.
-
-= 7.0.2 =
-
-🛠️ Bug Fixes & Improvements
-
-• Fixed an issue with detecting `nofollow` and `noindex` pages when using the Rank Math SEO plugin.
-• The "Clear Caches" button in the Cache Management block now also clears the LLMS index table to ensure full site reindexing.
-
-= 7.0.1 =
-
-🛠️ Bug Fixes: JSON API Compatibility
-
-• Resolved a critical issue that caused "Update failed. The response is not a valid JSON response." when editing or publishing posts.
-• The plugin now correctly avoids interfering with the WordPress REST API response during post save/update actions.
-• Confirmed compatibility with block editor and custom post types. Post creation and updates now work reliably.
-
-= 7.0.0 =
-
-🚀 Major Overhaul: LLMS.txt Generation & Performance
-
-• Rebuilt the LLMS.txt generation system from the ground up.
-• Introduced a dedicated `llms_txt_cache` database table to index and store structured data efficiently.
-• Greatly reduced server load by avoiding direct filesystem writes and enabling smarter caching.
-• File generation is now handled **asynchronously via scheduled cron jobs** to avoid UI slowdowns and improve scalability.
-• Minimized the number of filesystem write operations during LLMS.txt generation, improving reliability and performance.
-• Optimized for large-scale databases. Smoother performance on sites with thousands of posts.
-
-= 6.1.2 =
-
-🔧 Improved: Internationalization (i18n) and Display Logic
-• Resolved several i18n issues by improving translation coverage and context handling.
-• Prevented empty post_content pages from being shown in detailed content view.
-• Fixed incorrect tagline display by properly falling back to site description settings.
-
-These updates improve localization accuracy, content visibility logic, and metadata consistency.
-
-= 6.1.1 =
-
-🧹 Removed: Global Cache Flush
-• Eliminated `wp_cache_flush()` calls from content processing loop.
-• Prevented unintended flushing of global object cache affecting other plugins.
-• Reading operations no longer interfere with cache integrity.
-
-= 6.1.0 =
-
-✅ Fixed: Yoast SEO Variable Parsing
-• Resolved issue where dynamic SEO content using Yoast variables (e.g., %%title%%, %%excerpt%%) wasn’t correctly replaced during content generation.
-• Content processed through wpseo_replace_vars() to ensure accurate output.
-• Improved compatibility with Yoast SEO templates, even when used outside the standard loop or template hierarchy.
-
-= 6.0.8 =
-
-✅ Fixed: Emoji and Code Cleanup in llms.txt
-• Emojis and unnecessary symbols are now automatically removed from `llms.txt`.
-• Code snippets are correctly sanitized for plain-text output.
-• Improved table formatting: table data is now correctly aligned and rendered when exported.
-
-= 6.0.7 =
-
-🗑️ Removed ai.txt File Generation
-• The automatic creation of the ai.txt file has been removed.
-• This change reduces unnecessary file writes and simplifies plugin behavior.
-• If needed, you can still manually create and manage ai.txt in your site’s root.
-
-= 6.0.6 =
-
-✅ Persistent Dismiss for Admin Notices
-• Admin notices now store dismissal state using user meta, ensuring they remain hidden once closed.
-• No more repeated reminders across dashboard pages. Smoother and less intrusive user experience.
-
-🛠 Minor Code Cleanup
-• Removed outdated notice render logic.
-• Improved JS handling for notice dismissals across multi-user environments.
-
-= 6.0.5 =
-⚡ Enhanced Performance & Clean Output
-• Database query logic fully refactored for high-speed data selection, reducing generation time by up to 70% on large sites.
-• Replaced WP_Query with direct SQL access. Now works faster and avoids unnecessary overhead.
-• Significantly improved scalability and lower memory usage during .txt file generation.
-
-🧹 Special Character Cleanup
-• Removed invisible and problematic characters (NBSP, BOM, ZWSP, etc.) from post content to ensure clean and readable output.
-• Prevents display issues and improves downstream AI parsing of .txt files.
-
-📈 Faster Regeneration
-• Full .txt regeneration after content updates is now noticeably faster, especially on content-heavy websites.
-• Better memory handling and reduced write cycles during generation.
-
-= 6.0.4 =
-
-🌐 Multisite Link Format Change
-• For multisite installations, .txt files are now accessible via trailing slash URLs:
-example.com/llms.txt/ and example.com/ai.txt/.
-• This ensures compatibility across various server environments and mapped domain setups.
-• For single-site setups, physical .txt files are still generated and stored in the root directory.
-
-🔧 Yoast SEO Exclusion Fix
-• Fixed an issue where pages marked with noindex or nofollow in Yoast SEO were not properly excluded from the .txt output.
-• Now both _yoast_wpseo_meta-robots-noindex and _yoast_wpseo_meta-robots-nofollow are fully respected.
-
-= 6.0.3 =
-
-🐛 Fix: 404 Not Found on NGINX Servers
-• Resolved an issue where .txt files (llms.txt, ai.txt) returned a 404 error on NGINX-based hosting environments.
-• Rewrite rules are now properly flushed and executed without needing manual permalink updates.
-
-💰 Product Price Output
-• Product prices are now displayed as plain text values (e.g., 56.00 USD) instead of HTML when WooCommerce support is enabled.
-• Ensures clean and readable output for price values in llms.txt.
-
-🔄 Important: Clear Cache After Update
-• After updating to this version, please clear your site’s cache (including server-side and CDN cache) to ensure .txt file endpoints load correctly.
-
-= 6.0.2 =
-
-🌐 Multisite Support (Beta)
-• The plugin now supports WordPress Multisite environments.
-• Each site now stores and serves its own `llms.txt` and `ai.txt` content independently.
-• Scheduled cron tasks are isolated per site to ensure accurate and isolated updates.
-• Multisite-aware hooks implemented in `template_redirect` to correctly output `.txt` files on mapped domains.
-
-📢 Admin Notice for Feature Suggestions
-• Added a dismissible admin notice on new plugin installs to gather feedback and feature suggestions from users.
-• Links included to Twitter and WP.org support forum for easy community engagement.
-• Let’s coordinate on Slack for the next release to align on roadmap input strategy.
-
-= 6.0.1 =
-
-🛠️ Breakdance Compatibility Fix
-• Fixed an issue where enabling “instant” updates for the llms.txt file on post save caused a 500 error when using the latest version of Breakdance Builder.
-• Now, immediate updates are handled safely without interrupting the save process.
-
-⏱️ Improved Cron Handling
-• Switched to using a single scheduled event (wp_schedule_single_event) instead of triggering file updates directly during shutdown.
-• This ensures better compatibility and stability, especially on heavy or slower servers.
-
-➕ WooCommerce SKU Support
-• Added SKU output if the post type is a WooCommerce product.
-• The llms.txt file now includes a line like - SKU: [Product SKU] when available.
-
-
-= 6.0.0 =
-
-🛠️ Page Creation Respecting Settings
-• Fixed a logic inconsistency where the AI Sitemap page could still exist even if the related setting was disabled.
-• The plugin now ensures that page creation behavior strictly follows the user’s configuration, both during normal operation and after plugin updates.
-
-
-= 5.0.8 =
-
-🛠️ Page Creation Respecting Settings
-• Fixed a logic inconsistency where the AI Sitemap page could still exist even if the related setting was disabled.
-• The plugin now ensures that page creation behavior strictly follows the user’s configuration, both during normal operation and after plugin updates.
-
-= 5.0.7 =
-
-✅ New: Optional AI Sitemap Page
-• Added a new setting to disable automatic creation of the AI Sitemap page (ai-sitemap).
-• Users can now manage whether this page is created on init via the plugin settings panel.
-
-🧠 Performance & Memory Usage
-• Improved memory handling during content generation, especially for large post meta datasets.
-• Reduced risk of memory leaks when working with heavy content by loading posts via IDs and flushing cache dynamically.
-
-📄 Content Generation Enhancements
-• Fixed issues related to long post content generation in llms.txt.
-• Added a new option to control the number of words included per post in the generated file (default: 250).
-• Better content trimming and cleaning logic for consistent output.
-
-🔧 Stability & Cleanup
-• Optimized handling of unset variables and object cleanup to avoid bloating memory usage during cron or manual execution.
-
-= 5.0.7 =
-
-✅ Settings Consistency Improvements
-• The plugin now respects the “Include AI Sitemap page” setting more reliably across updates.
-• Internal checks ensure that unnecessary pages are not created or kept when the option is disabled.
-
-🧠 Update-Aware Logic
-• Introduced version-aware behavior to trigger settings-related adjustments only once after plugin updates.
-• Ensures cleaner and more consistent state without manual intervention.
-
-= 5.0.6 =
-
-✅ New: Optional AI Sitemap Page
-• Added a new setting to disable automatic creation of the AI Sitemap page (ai-sitemap).
-• Users can now manage whether this page is created on init via the plugin settings panel.
-
-🧠 Performance & Memory Usage
-• Improved memory handling during content generation, especially for large post meta datasets.
-• Reduced risk of memory leaks when working with heavy content by loading posts via IDs and flushing cache dynamically.
-
-📄 Content Generation Enhancements
-• Fixed issues related to long post content generation in llms.txt.
-• Added a new option to control the number of words included per post in the generated file (default: 250).
-• Better content trimming and cleaning logic for consistent output.
-
-🔧 Stability & Cleanup
-• Optimized handling of unset variables and object cleanup to avoid bloating memory usage during cron or manual execution.
-
-🧪 Tested With
-• ✅ WordPress 6.5
-• ✅ Yoast SEO 22.x
-• ✅ Rank Math & AIOSEO compatibility verified
-
-= 5.0.5 =
-
-✅ Fixed 404 Error for Sitemap XML
-• Resolved an issue where the llms-sitemap.xml endpoint could return a 404 error despite being properly registered.
-• Now correctly sets the HTTP 200 status header for valid sitemap requests using status_header(200), ensuring compatibility with WordPress routing and sitemap indexing.
-• Improved query var handling and rewrite rule registration to guarantee sitemap accessibility.
-
-🧠 Other Improvements
-• Refactored request handling logic to ensure clean output with proper MIME type headers (application/xml).
-• Further stability improvements for Yoast integration and dynamic sitemap indexing.
-
-🧪 Tested with WordPress 6.5 and Yoast SEO 22.x
-
-= 5.0.4 =
-
-🛠 Improvements & Fixes
-
-✅ Automatic AI Sitemap page generation
-    • The plugin now auto-creates a public /ai-sitemap page explaining what LLMs.txt is and how it improves AI visibility.
-    • The page is only created if it doesn’t already exist, and includes a dynamic link to your actual LLMs sitemap file.
-    • Content is filterable for advanced customization.
-
-✅ Added support for ai.txt as an alternate LLM sitemap path
-    • The plugin now generates both /llms.txt and /ai.txt to maximize compatibility with future AI indexing standards.
-    • Both files are kept in sync and contain the same URL list.
-    • This improves discoverability by AI crawlers that look for ai.txt by default.
-
-✅ Enhanced onboarding & reliability
-    • Improved logic to prevent duplicate pages.
-    • Cleaned up sitemap text formatting for better readability.
-    • Hook-friendly architecture for developers.
-
-🚀 This update makes your site even more AI-ready by exposing your content through both standard and emerging LLM indexing formats, paving the way for visibility in tools like ChatGPT, Perplexity, and beyond.
-
-= 5.0.3 =
-
-🛠 Improvements & Fixes
-
-✅ Added support for AIOSEO plugin
-    • Integrated detection of aioseo_posts table to improve filtering accuracy.
-    • Posts marked with robots_noindex or robots_nofollow in AIOSEO are now correctly excluded from output.
-    • Fallback-safe: the logic only applies if the AIOSEO table exists in the database.
-
-✅ Enhanced compatibility with multiple SEO plugins
-    • Filtering logic now handles both Rank Math and AIOSEO data sources.
-    • Posts without SEO meta data are still properly included unless explicitly marked as noindex.
-
-🚀 This update expands SEO plugin compatibility, ensuring more accurate output when working with AIOSEO-powered sites, and avoids accidental indexing of excluded content.
-
-
-= 5.0.2 =
-✅ Fixed: Removed invalid contributor username from readme.txt (only WordPress.org profiles are allowed)
-
-= 5.0.1 =
-
-🛠 Improvements & Fixes
-
-✅ Fixed issue with empty LLMS-generated files
-	•	Resolved a bug where LLMS-generated files could appear empty if the rank_math_robots meta key was missing from posts.
-	•	The plugin now correctly includes posts even if the Rank Math plugin is not installed or the meta field is not present.
-	•	Prevented false negatives by ensuring the query accounts for both existing and non-existent rank_math_robots fields.
-
-✅ Improved meta query logic for noindex handling
-	•	Extended the meta_query to handle posts without the rank_math_robots key gracefully.
-	•	Ensured that only posts explicitly marked as noindex are excluded, while all others (including those with no SEO plugin data) are properly included.
-
-✅ Improved file generation accuracy
-	•	Ensured that LLMS-related output files contain valid, expected content, reducing cases where generated files were blank due to strict filtering.
-	•	Improved fallback logic for posts without SEO meta data.
-
-🚀 This update ensures that LLMS-generated files remain accurate and complete, even on sites that don’t use Rank Math, and improves overall reliability when filtering content by SEO metadata.
-
-= 5.0.0 =
-
-🛠 Improvements & Fixes
-
-✅ Added support for excluding noindex pages from Rank Math SEO
-
-- The plugin now properly detects and excludes pages that have the `noindex` directive set in Rank Math SEO.
-- Ensured that pages with `rank_math_robots` meta key containing `noindex` will not be included in the LLMS-generated files.
-- This enhancement improves search engine indexing by preventing noindex-marked pages from being processed.
-
-✅ Extended support for Yoast SEO & Rank Math
-
-- Now supports both Yoast SEO and Rank Math SEO for detecting `noindex` pages.
-- Ensured that `meta-robots-noindex` in Yoast and `rank_math_robots` in Rank Math are respected.
-- Improved meta query logic to exclude noindex-marked pages efficiently.
-
-✅ Better performance & stability
-
-- Optimized post query handling to reduce unnecessary database queries when filtering indexed content.
-- Improved support for large-scale websites by ensuring efficient exclusion of noindex pages.
-
-🚀 This update ensures full compatibility with both Yoast SEO and Rank Math SEO, improving site indexing and preventing unwanted pages from being processed.
-
-
-= 4.0.9 =
-
-🛠 Improvements & Fixes
-✅ Fixed compatibility issue with Yoast SEO sitemap generation
-
-Resolved a problem where the llms-sitemap.xml file was not properly integrated with Yoast SEO’s sitemap indexing.
-Ensured that the custom llms-sitemap.xml is correctly registered and included in Yoast’s sitemap structure.
-✅ Enhanced XML sitemap handling
-
-Added support for llms-sitemap.xml in the Yoast SEO wpseo_sitemaps_index filter.
-Improved automatic detection and registration of the custom sitemap to avoid conflicts.
-✅ Better performance & stability
-
-Optimized the sitemap generation process to ensure compatibility with WordPress rewrite rules.
-Fixed potential issues where the custom sitemap URL might not be accessible due to incorrect rewrite rules.
-🚀 This update ensures full compatibility between the LLMS sitemap and Yoast SEO, improving site indexing and search engine visibility.
+Changelog entries for versions 7.1.6 and earlier have been condensed to keep this file within wp.org's length limit. The full version history is preserved in the plugin source. Contact the plugin authors if you need details on an older release.
