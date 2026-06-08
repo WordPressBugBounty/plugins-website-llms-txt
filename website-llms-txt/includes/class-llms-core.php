@@ -174,6 +174,10 @@ class LLMS_Core {
         if (defined('SLIM_SEO_VER')) {
             require_once LLMS_PLUGIN_DIR . 'includes/slim-seo.php';
         }
+
+        if (function_exists('aioseo')) {
+            require_once LLMS_PLUGIN_DIR . 'includes/aioseo.php';
+        }
     }
 
     public function register_settings() {
@@ -401,7 +405,7 @@ class LLMS_Core {
         if (get_query_var('llms_txt')) {
             $latest_post = apply_filters('get_llms_content', '');
             if ($latest_post) {
-                header('Content-Type: text/plain');
+                header('Content-Type: text/plain; charset=utf-8');
                 echo esc_html($latest_post);
                 exit;
             }

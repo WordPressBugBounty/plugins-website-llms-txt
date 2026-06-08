@@ -409,7 +409,13 @@ class LLMS_Generator
         }
         $slug = 'ai-sitemap';
         $existing_page = get_page_by_path( $slug );
-        $output = ''; // No BOM: keep the file as clean UTF-8 so the first byte is the H1 marker
+        // UTF-8 BOM. This is the only in-band charset signal for the physical
+        // llms.txt served directly by the web server (which often omits a
+        // charset on .txt), so without it non-ASCII content (Cyrillic, CJK,
+        // etc.) is mis-sniffed as Latin-1 and renders as mojibake. A BOM does
+        // not affect the "missing H1" validators (those were tripped by the
+        // `---` separators, removed in 8.4.1), so it is safe to keep.
+        $output = "\xEF\xBB\xBF";
         if(is_a($existing_page,'WP_Post')) {
             $output .= "# Learn more:" . get_permalink($existing_page) . "\n\n";
         }

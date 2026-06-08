@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.4.1
+Stable tag: 8.4.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,6 +99,18 @@ Yes. On a network-activated install, each subsite gets its own rewrite rules, an
 
 
 == Changelog ==
+
+= 8.4.3 =
+
+✨ New: All in One SEO meta descriptions
+
+• The plugin now pulls meta descriptions from All in One SEO (AIOSEO) when "Include post excerpts / meta descriptions" is enabled, in addition to the existing Yoast SEO, Rank Math, and Slim SEO support. AIOSEO smart tags (for example #post_title) are rendered to their final text. Previously only AIOSEO's index/noindex rules were honored and its descriptions were skipped. After updating, regenerate the file (Settings → LLMs.txt → Generate Now). Thanks to the reporter on the wp.org support forum.
+
+= 8.4.2 =
+
+🐛 Encoding fix
+
+• Fixed garbled non-ASCII text (mojibake) in `llms.txt` that could appear after updating to 8.4.1, for example Cyrillic, Greek, or CJK content rendering as `Ð...` sequences. The 8.4.1 release removed the UTF-8 byte-order mark, which on many servers was the only signal telling browsers the statically served file is UTF-8; without it the file could be mis-read as Latin-1. The BOM has been restored (it does not affect the "missing H1" validators, which were tripped by the `---` separators removed in 8.4.1), and the virtual file route now also sends an explicit `text/plain; charset=utf-8` header. Update and regenerate (Settings → LLMs.txt → Generate Now) to refresh the file. Thanks to the reporter on the wp.org support forum.
 
 = 8.4.1 =
 
