@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.4.3
+Stable tag: 8.4.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -99,6 +99,12 @@ Yes. On a network-activated install, each subsite gets its own rewrite rules, an
 
 
 == Changelog ==
+
+= 8.4.4 =
+
+🐛 Fix: WPML hidden languages
+
+• Posts belonging to a WPML language marked as hidden (WPML → Languages → Hide languages) are no longer included in the generated llms.txt. This prevents unfinished or intentionally hidden translations from being exposed to AI crawlers. After updating, use the LLMs.txt Reset option (Settings → LLMs.txt) to rebuild the cache so previously included hidden-language URLs are removed. Thanks to the reporter on the wp.org support forum.
 
 = 8.4.3 =
 

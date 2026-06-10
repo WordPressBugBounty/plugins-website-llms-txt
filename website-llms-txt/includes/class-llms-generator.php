@@ -707,6 +707,25 @@ class LLMS_Generator
         return $meta_description;
     }
 
+    /**
+     * Return the WPML language codes marked as hidden (WPML → Languages →
+     * Hide languages). Posts in these languages are excluded from llms.txt.
+     * Uses WPML's own setting filter, falling back to the raw option.
+     *
+     * @return array Array of hidden language codes (e.g. ['de', 'fr']).
+     */
+    private function get_wpml_hidden_languages()
+    {
+        $hidden = apply_filters('wpml_setting', null, 'hidden_languages');
+        if (!is_array($hidden)) {
+            $settings = get_option('icl_sitepress_settings');
+            $hidden = (is_array($settings) && isset($settings['hidden_languages']) && is_array($settings['hidden_languages']))
+                ? $settings['hidden_languages']
+                : [];
+        }
+        return $hidden;
+    }
+
     public function ajax_reset_gen_init() {
         if ( ! current_user_can('manage_options') ) wp_send_json_error('Permission denied');
         check_ajax_referer('llms_gen_nonce');
@@ -881,6 +900,7 @@ class LLMS_Generator
         $price = '';
         $sku = '';
 
+        $is_hidden_language = false;
         if(defined('ICL_LANGUAGE_CODE')) {
             $language_code = $wpdb->get_var("SELECT language_code FROM {$wpdb->prefix}icl_translations WHERE element_id=" . intval($post->ID) . " AND element_type LIKE '%_" . $post->post_type . "'");
             $permalink = apply_filters(
@@ -888,6 +908,14 @@ class LLMS_Generator
                 get_permalink($post->ID),
                 $language_code
             );
+
+            // Exclude posts belonging to a WPML language marked as hidden
+            // (WPML → Languages → Hide languages) so unfinished or intentionally
+            // hidden translations are not exposed in llms.txt.
+            $hidden_languages = $this->get_wpml_hidden_languages();
+            if ($language_code && in_array($language_code, $hidden_languages, true)) {
+                $is_hidden_language = true;
+            }
         } else {
             $permalink = get_permalink($post->ID);
         }
@@ -914,6 +942,9 @@ class LLMS_Generator
         }
 
         $show = 1;
+        if ($is_hidden_language) {
+            $show = 0;
+        }
         if (isset($post->post_type) && $post->post_type === 'product') {
             $sku = get_post_meta($post->ID, '_sku', true);
             $price = get_post_meta($post->ID, '_price', true);
