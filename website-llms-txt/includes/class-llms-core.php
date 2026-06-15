@@ -199,8 +199,6 @@ class LLMS_Core {
                     'update_frequency' => 'immediate',
                     'need_check_option' => true,
                     'llms_allow_indexing' => false,
-                    'llms_local_log_enabled' => false,
-                    'llms_global_telemetry_optin' => false,
                     'include_md_file' => false,
                     'detailed_content' => false,
                     'llms_txt_title' => '',
@@ -249,8 +247,6 @@ class LLMS_Core {
         
         // Sanitize boolean values
         $clean['llms_allow_indexing'] = !empty($value['llms_allow_indexing']);
-        $clean['llms_local_log_enabled'] = !empty($value['llms_local_log_enabled']);
-        $clean['llms_global_telemetry_optin'] = !empty($value['llms_global_telemetry_optin']);
         $clean['include_meta'] = !empty($value['include_meta']);
         $clean['noindex_header'] = !empty($value['noindex_header']);
         $clean['include_excerpts'] = !empty($value['include_excerpts']);

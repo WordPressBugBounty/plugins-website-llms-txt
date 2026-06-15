@@ -37,8 +37,6 @@ class LLMS_Generator
             'noindex_header' => false,
             'gform_include' => false,
             'llms_allow_indexing' => false,
-            'llms_local_log_enabled' => false,
-            'llms_global_telemetry_optin' => false,
             'include_md_file' => false,
             'detailed_content' => false,
             'llms_txt_title' => '',

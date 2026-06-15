@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.4.4
+Stable tag: 8.5.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,16 +24,13 @@ Traditional sitemaps and robots files guide search engines. But as AI-driven sys
 ✅ **SEO plugin integration**: works seamlessly with Yoast SEO, Rank Math, SEOPress, and AIOSEO, automatically excluding content marked as *noindex* or *nofollow*.
 ✅ **Advanced controls**: choose post types, customize file titles or descriptions, attach optional Markdown files, and trigger manual regeneration.
 ✅ **Developer-friendly**: includes filters such as `llms_generator_get_post_meta_description` for description logic, performance tuning, and custom indexing behavior.
-✅ **AI crawler detection**: opt in to track whether GPTBot, ClaudeBot, or PerplexityBot are actually reading your site’s `llms.txt`.
 ✅ **WooCommerce & multisite ready**: respects product visibility rules and scales easily across large or networked sites.
-✅ **Privacy-first experiment**: anonymous, encrypted telemetry helps reveal which bots are accessing `llms.txt` files across the web.
 
 ### Activation & setup
 1. Activate the plugin.
-2. Visit *Settings → LLMs.txt* to configure post types, update frequency (immediate, daily, or weekly), and optional crawler logging.
+2. Visit *Settings → LLMs.txt* to configure post types and update frequency (immediate, daily, or weekly).
 3. The plugin generates `llms.txt` (and optionally `llms-full.txt`) and serves it from your site root.
 4. Content updates trigger automatic regeneration. All noindex/nofollow rules from your SEO plugin are respected.
-5. If you enable AI crawler logging, local and global logs record each visit from known AI bots, viewable right inside your WordPress dashboard.
 
 ### Use cases for llms.txt
 - Publishers, SaaS companies, developers, and documentation sites that want to make their content easier for AI systems to interpret.
@@ -76,9 +73,6 @@ The plugin includes fallback logic for environments such as WordPress VIP or rea
 = Does it work with SEO plugins like Yoast or Rank Math? =
 Yes. It automatically integrates with Yoast SEO, Rank Math, SEOPress, and AIOSEO. Pages marked as *noindex* or *nofollow* in any of those plugins will be excluded from your `llms.txt` file automatically.
 
-= Can I track which AI bots visit my llms.txt file? =
-Yes. When crawler logging is enabled, visits from AI crawlers such as GPTBot, ClaudeBot, and PerplexityBot are recorded. You can view these visits in your WordPress dashboard. If you opt into the global experiment, your data is anonymized and encrypted before contributing to a shared dataset that tracks AI bot behavior across thousands of sites.
-
 = Will it conflict with sitemap.xml or robots.txt? =
 No. `llms.txt` complements your sitemap and robots file. Sitemaps tell search engines what to crawl; `llms.txt` helps AI systems understand what’s most valuable. They work together without overlap or conflict.
 
@@ -88,17 +82,22 @@ Yes. You can include or exclude specific post types, add a custom title or descr
 = I’m a developer. Are there filters or hooks available? =
 Yes. Filters such as `llms_generator_get_post_meta_description` and others allow you to modify how descriptions are generated or extend what metadata appears in the file. Developers can also adjust caching behavior, database queries, and output formatting.
 
-= Is any personal data shared when I enable crawler logging? =
-No. All telemetry is privacy-first. Local logs remain on your site. If you opt into the public experiment, only anonymized data (bot name, timestamp, and a hashed version of your domain) is shared. No content, user, or identifiable data is ever transmitted.
-
 = Does the plugin set any cookies, and is the Visibility Kit connection optional? =
-Out of the box, the plugin sets no cookies and loads no third-party scripts. The optional Visibility Kit integration is strictly opt-in: nothing is added to your site until an administrator enters an email address and clicks **Connect to Visibility Kit** in the plugin settings. Only after you connect does the plugin load the Visibility Kit script (`vk.js`), which sets first-party analytics cookies (`_vk_vid`, `_vk_session_id`, `_vk_attr_first`, `_vk_landing`, `_vk_referrer`) used to attribute AI-referred visits. You can remove the script and stop the cookies at any time with **Disconnect from Visibility Kit** in the settings. If you use a Consent Management Platform (Cookiebot, Complianz, etc.), connect only after wiring the script into your consent flow so the cookies fire after consent, and declare the `_vk_*` cookies in your cookie policy. AI bot tracking is a separate setting that is off by default and sets no visitor cookies.
+Out of the box, the plugin sets no cookies and loads no third-party scripts. The optional Visibility Kit integration is strictly opt-in: nothing is added to your site until an administrator enters an email address and clicks **Connect to Visibility Kit** in the plugin settings. Only after you connect does the plugin load the Visibility Kit script (`vk.js`), which sets first-party analytics cookies (`_vk_vid`, `_vk_session_id`, `_vk_attr_first`, `_vk_landing`, `_vk_referrer`) used to attribute AI-referred visits. You can remove the script and stop the cookies at any time with **Disconnect from Visibility Kit** in the settings. If you use a Consent Management Platform (Cookiebot, Complianz, etc.), connect only after wiring the script into your consent flow so the cookies fire after consent, and declare the `_vk_*` cookies in your cookie policy.
 
 = Does it work on WordPress Multisite? =
 Yes. On a network-activated install, each subsite gets its own rewrite rules, and sites created later have rules registered automatically. The plugin also detects Multisite when deciding whether to write `llms.txt` to the site root, so each subsite serves its own file at its own URL.
 
 
 == Changelog ==
+
+= 8.5.0 =
+
+🧹 Removed AI bot crawl tracking
+
+• Removed the server-side AI bot/crawler detection and logging. The plugin no longer inspects request User-Agents, keeps a local bot log, or sends any crawler telemetry. `llms.txt` generation is unchanged.
+• The optional Visibility Kit integration now focuses solely on AI referral traffic: the real visitors that AI search (ChatGPT, Claude, Gemini, Perplexity) sends to your site. Connecting and the `vk.js` referral script work exactly as before.
+• Removed the "AI bot crawl detection" setting. No action needed; your llms.txt and any Visibility Kit connection are unaffected.
 
 = 8.4.4 =
 

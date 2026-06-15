@@ -66,13 +66,6 @@ class LLMS_VisibilityKit
             update_option('vk_client_id', sanitize_text_field($body['clientId']));
             update_option('vk_connected_email', $email);
 
-            // Auto-enable bot tracking on connect
-            $settings = get_option('llms_generator_settings', []);
-            if (empty($settings['llms_local_log_enabled'])) {
-                $settings['llms_local_log_enabled'] = 1;
-                update_option('llms_generator_settings', $settings);
-            }
-
             wp_send_json_success([
                 'message' => $body['message'] ?? 'Connected successfully.',
             ]);
@@ -105,11 +98,6 @@ class LLMS_VisibilityKit
         delete_option('vk_connected_email');
         delete_option('vk_summary_data');
         delete_transient('vk_summary_fresh');
-
-        // Disable bot tracking on disconnect
-        $settings = get_option('llms_generator_settings', []);
-        $settings['llms_local_log_enabled'] = 0;
-        update_option('llms_generator_settings', $settings);
 
         wp_send_json_success();
     }

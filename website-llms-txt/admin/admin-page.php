@@ -306,36 +306,10 @@ if (isset($_GET['settings-updated']) &&
                 </div>
             </div>
 
-            <!-- Tracking Settings -->
+            <?php if ($vk_connected): ?>
+            <!-- Visibility Kit Connection -->
             <div class="card vk-tracking-settings-card">
-                <h2><?php esc_html_e('Tracking Settings', 'website-llms-txt'); ?></h2>
-                <form method="post" action="options.php" id="llms-settings-tracking-form">
-                    <?php settings_fields('llms_generator_settings'); ?>
-                    <div class="vk-checkbox-row">
-                        <label>
-                            <input type="checkbox" name="llms_generator_settings[llms_local_log_enabled]" value="1" <?php checked(!empty($settings['llms_local_log_enabled'])); ?>>
-                            <?php esc_html_e('AI bot crawl detection', 'website-llms-txt'); ?>
-                        </label>
-                        <p class="vk-checkbox-desc">
-                            <?php esc_html_e('Server-side detection of AI bots crawling your site. Data is sent to Visibility Kit.', 'website-llms-txt'); ?>
-                        </p>
-                    </div>
-                    <?php if(!empty($settings)): ?>
-                        <?php foreach($settings as $key => $value): ?>
-                            <?php if(in_array($key, ['llms_local_log_enabled'])) continue ?>
-                            <?php if(is_array($value)): ?>
-                                <?php foreach($value as $second_key => $second_value): ?>
-                                    <input type="hidden" name="llms_generator_settings[<?php echo esc_attr( $key ); ?>][]" value="<?php echo esc_attr( $second_value ); ?>"/>
-                                <?php endforeach ?>
-                            <?php else: ?>
-                                <input type="hidden" name="llms_generator_settings[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $value ); ?>"/>
-                            <?php endif ?>
-                        <?php endforeach ?>
-                    <?php endif ?>
-                    <?php submit_button(esc_html__('Save settings', 'website-llms-txt'), 'primary', 'submit', true); ?>
-                </form>
-
-                <?php if ($vk_connected): ?>
+                <h2><?php esc_html_e('Connection', 'website-llms-txt'); ?></h2>
                 <div class="vk-disconnect-section">
                     <h3><?php esc_html_e('Disconnect from Visibility Kit', 'website-llms-txt'); ?></h3>
                     <p>
@@ -345,12 +319,8 @@ if (isset($_GET['settings-updated']) &&
                         <button type="button" id="vk-disconnect-btn" class="button button-secondary"><?php esc_html_e('Disconnect', 'website-llms-txt'); ?></button>
                     </div>
                 </div>
-                <?php endif; ?>
-
-                <p class="vk-caching-note">
-                    <?php esc_html_e('Note: If your site uses full-page caching (WP Engine, Cloudflare, etc.), some bot visits may not be detected server-side.', 'website-llms-txt'); ?>
-                </p>
             </div>
+            <?php endif; ?>
 
         </div><!-- /left column -->
 
