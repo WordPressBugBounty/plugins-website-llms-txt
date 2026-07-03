@@ -1038,6 +1038,11 @@ class LLMS_Generator
             $content = ob_get_clean();
         }
 
+        // Allow integrations (e.g. ACF) or site owners to append custom field
+        // content that lives outside post_content, which get_the_content() does
+        // not include. Return the string unchanged to opt out.
+        $content = apply_filters('llms_generator_post_content', $content, $post);
+
         if ( $md_toggle ) {
             $show = 0;
         }

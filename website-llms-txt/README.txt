@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.5.0
+Stable tag: 8.5.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -90,6 +90,13 @@ Yes. On a network-activated install, each subsite gets its own rewrite rules, an
 
 
 == Changelog ==
+
+= 8.5.1 =
+
+🐛 Fixes and a new developer hook
+
+• Fixed a dismissible admin notice that reappeared after being closed. The roadmap notice has been removed, so it no longer comes back on every page load.
+• Added a new `llms_generator_post_content` filter so integrations and site owners can append content that lives outside the main editor, such as Advanced Custom Fields (ACF) values, to a post's detailed content in llms.txt.
 
 = 8.5.0 =
 

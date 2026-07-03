@@ -36,11 +36,9 @@ class LLMS_Core {
 
         add_action('wp_head', array($this, 'wp_head'));
 
-        add_action('all_admin_notices', array($this, 'all_admin_notices'));
         add_action('admin_notices', array($this, 'render_vk_banner'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_notice_script'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_banner_styles'));
-        add_action('wp_ajax_dismiss_llms_admin_notice', array($this, 'dismiss_llms_admin_notice'));
         add_action('wp_ajax_dismiss_llms_vk_banner', array($this, 'dismiss_llms_vk_banner'));
         add_filter('redirect_canonical', array($this, 'redirect_canonical'), 10, 2);
     }
@@ -88,32 +86,12 @@ class LLMS_Core {
         wp_send_json_success();
     }
 
-    public function all_admin_notices() {
-        if (get_user_meta(get_current_user_id(), 'llms_notice_dismissed', true)) {
-            return;
-        }
-        ?>
-        <div class="notice updated is-dismissible llms-admin-notice">
-            <p><?php esc_html_e('Website LLMs.txt - Want new features? Suggest and vote to shape our plugin development roadmap.', 'website-llms-txt'); ?>
-                <a href="https://x.com/ryhowww/status/1909712881387462772" target="_blank"><?php esc_html_e('Twitter', 'website-llms-txt'); ?></a> |
-                <a href="https://wordpress.org/support/?post_type=topic&p=18406423"><?php esc_html_e('WP Forums', 'website-llms-txt'); ?></a>
-            </p>
-        </div>
-        <?php
-    }
-
     public function enqueue_notice_script() {
         wp_enqueue_script('llms-notice-script', LLMS_PLUGIN_URL . 'admin/notice-dismiss.js', array('jquery'), LLMS_VERSION, true);
         wp_localize_script('llms-notice-script', 'llmsNoticeAjax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('llms_dismiss_notice')
         ));
-    }
-
-    public function dismiss_llms_admin_notice() {
-        check_ajax_referer('llms_dismiss_notice', 'nonce');
-        update_user_meta(get_current_user_id(), 'llms_notice_dismissed', 1);
-        wp_send_json_success();
     }
 
     public function wp_head() {
