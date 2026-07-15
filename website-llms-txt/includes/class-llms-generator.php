@@ -894,6 +894,33 @@ class LLMS_Generator
             $product = wc_get_product( $post->ID );
         }
 
+        // Put WPML into this post's language before any permalink is built.
+        //
+        // get_permalink() resolves against the *current* language, so without this
+        // the URL cached for a translation is built from the default language's slug
+        // and then only has the language prefix swapped on, producing hybrids like
+        // /en/kontakt/ (English prefix, German slug) while the front end shows
+        // /en/contact/ correctly.
+        //
+        // This switch previously lived only in updates_all_posts(), so the cron path
+        // was correct while the other two callers — the save_post hook and the
+        // "Delete and recreate" batch — were not. Whichever ran last won, which is
+        // why re-saving a page could corrupt a URL that the cron had gotten right.
+        // Doing it here covers all three callers.
+        $llms_restore_lang = null;
+        if (function_exists('wpml_object_id_filter') && $post instanceof WP_Post) {
+            $llms_post_lang = apply_filters('wpml_element_language_code', null, array(
+                'element_id'   => $post->ID,
+                'element_type' => 'post_' . $post->post_type,
+            ));
+            if ($llms_post_lang) {
+                // Restore afterwards: on the save_post path this runs mid-request,
+                // and leaving WPML switched would leak into the rest of the request.
+                $llms_restore_lang = apply_filters('wpml_current_language', null);
+                do_action('wpml_switch_language', $llms_post_lang);
+            }
+        }
+
         $table = $wpdb->prefix . 'llms_txt_cache';
         $price = '';
         $sku = '';
@@ -1105,6 +1132,11 @@ class LLMS_Generator
         if ($this->settings['update_frequency'] === 'immediate' && $update !== 'manual') {
             wp_clear_scheduled_hook('llms_update_llms_file_cron');
             wp_schedule_single_event(time() + 30, 'llms_update_llms_file_cron');
+        }
+
+        // Put WPML back where we found it (see the switch at the top of this method).
+        if ($llms_restore_lang) {
+            do_action('wpml_switch_language', $llms_restore_lang);
         }
     }
 

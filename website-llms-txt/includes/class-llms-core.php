@@ -310,7 +310,11 @@ class LLMS_Core {
     }
 
     public function add_settings_link($links) {
-        $settings_link = '<a href="admin.php?page=llms-file-manager">' . __('Settings', 'website-llms-txt') . '</a>';
+        // The page is registered under tools.php (see add_admin_menu). Pointing at
+        // admin.php resolves the hook as toplevel_page_llms-file-manager, which was
+        // never registered, so WordPress rejects it with "Sorry, you are not allowed
+        // to access this page."
+        $settings_link = '<a href="' . esc_url(admin_url('tools.php?page=llms-file-manager')) . '">' . __('Settings', 'website-llms-txt') . '</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
@@ -343,11 +347,14 @@ class LLMS_Core {
         wp_schedule_single_event(time() + 2, 'llms_update_llms_file_cron');
 
 
+        // tools.php, not admin.php — the page is a tools.php submenu, so redirecting
+        // through admin.php lands on "Sorry, you are not allowed to access this page"
+        // and the cache_cleared notice below can never render.
         wp_safe_redirect(add_query_arg(array(
             'page' => 'llms-file-manager',
             'cache_cleared' => 'true',
             '_wpnonce' => wp_create_nonce('llms_cache_cleared')
-        ), admin_url('admin.php')));
+        ), admin_url('tools.php')));
         exit;
     }
 

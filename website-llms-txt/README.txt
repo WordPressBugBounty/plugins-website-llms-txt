@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.5.1
+Stable tag: 8.5.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -90,6 +90,14 @@ Yes. On a network-activated install, each subsite gets its own rewrite rules, an
 
 
 == Changelog ==
+
+= 8.5.2 =
+
+🐛 Fixes
+
+• Fixed wrong URLs in llms.txt on WPML sites. Translated pages could be listed with the right language prefix but the default language's slug, for example /en/kontakt/ instead of /en/contact/, even though the front end linked to the page correctly. The language was only being set during scheduled generation, so saving a page or using "Delete and recreate" rewrote that page's URL incorrectly. All three paths now build URLs in the post's own language.
+• Fixed the "Settings" link on the Plugins screen, which pointed at the wrong admin page and returned "Sorry, you are not allowed to access this page." It now opens Tools → Llms.txt.
+• Fixed "Clear caches" sending you to that same permission error afterwards. It now returns you to the settings page and shows the confirmation message.
 
 = 8.5.1 =
 
