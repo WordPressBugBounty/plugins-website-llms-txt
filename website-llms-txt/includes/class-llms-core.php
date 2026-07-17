@@ -329,22 +329,19 @@ class LLMS_Core {
         }
 
         check_admin_referer('clear_caches', 'clear_caches_nonce');
+        set_time_limit(0);
         do_action('llms_clear_seo_caches');
         $this->add_rewrite_rule();
         flush_rewrite_rules();
 
-        $upload_dir = wp_upload_dir();
-        $upload_path = $upload_dir['basedir'] . '/llms.txt';
-        if (file_exists($upload_path)) {
-            wp_delete_file($upload_path);
+        // Rebuild the file in this request instead of scheduling a WP-Cron
+        // event: on hosts where cron never fires, the scheduled rebuild
+        // silently never ran and the file stayed stale after "Clear caches".
+        // The cached post data is kept (only missing rows are refilled), so
+        // this stays cheap; the full re-crawl remains "Delete and recreate".
+        if ($this->generator) {
+            $this->generator->update_llms_file();
         }
-
-        global $wpdb;
-        $table = $wpdb->prefix . 'llms_txt_cache';
-        $wpdb->query( "TRUNCATE TABLE {$table}" );
-
-        wp_clear_scheduled_hook('llms_update_llms_file_cron');
-        wp_schedule_single_event(time() + 2, 'llms_update_llms_file_cron');
 
 
         // tools.php, not admin.php — the page is a tools.php submenu, so redirecting

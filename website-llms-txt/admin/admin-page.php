@@ -51,8 +51,25 @@ if (isset($_GET['cache_cleared']) && $_GET['cache_cleared'] === 'true' &&
     isset($_GET['_wpnonce'])) {
     $nonce = sanitize_text_field(wp_unslash($_GET['_wpnonce']));
     if (wp_verify_nonce($nonce, 'llms_cache_cleared')) {
-        echo '<div class="notice notice-success"><p>' . esc_html__('Caches cleared successfully!', 'website-llms-txt') . '</p></div>';
+        echo '<div class="notice notice-success"><p>' . esc_html__('Caches cleared and llms.txt regenerated.', 'website-llms-txt') . '</p></div>';
     }
+}
+
+// A scheduled llms.txt event whose due time is well in the past means WP-Cron
+// is not firing on this site, so automatic updates will never happen. Surface
+// that instead of letting them fail silently.
+$llms_cron_overdue = false;
+foreach (array('llms_update_llms_file_cron', 'llms_scheduled_update') as $llms_cron_hook) {
+    $llms_cron_next = wp_next_scheduled($llms_cron_hook);
+    if ($llms_cron_next && $llms_cron_next < time() - 15 * MINUTE_IN_SECONDS) {
+        $llms_cron_overdue = true;
+        break;
+    }
+}
+if ($llms_cron_overdue) {
+    echo '<div class="notice notice-warning"><p><strong>' . esc_html__('WP-Cron appears not to be running on this site.', 'website-llms-txt') . '</strong> ' .
+        esc_html__('A scheduled llms.txt update is overdue, so automatic updates (after saving a post, and the daily/weekly schedule) will not happen until cron is working. The buttons on this page still work. Ask your hosting provider about setting up a real cron job for wp-cron.php.', 'website-llms-txt') .
+        '</p></div>';
 }
 
 // Verify settings updated nonce and display message
@@ -79,6 +96,15 @@ if (isset($_GET['settings-updated']) &&
                 <h2><?php esc_html_e('File Status', 'website-llms-txt'); ?></h2>
                 <?php if ($latest_post): ?>
                     <p><?php esc_html_e('File is being auto-generated based on your settings.', 'website-llms-txt'); ?></p>
+                    <?php $llms_last_generated = (int) get_option('llms_last_generated'); ?>
+                    <?php if ($llms_last_generated): ?>
+                        <p>
+                            <?php
+                            /* translators: %s: date and time the llms.txt file was last generated */
+                            printf(esc_html__('Last generated: %s', 'website-llms-txt'), '<strong>' . esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $llms_last_generated)) . '</strong>');
+                            ?>
+                        </p>
+                    <?php endif; ?>
                     <p><?php esc_html_e('View files:', 'website-llms-txt'); ?></p>
                     <ul>
                         <li><a href="<?php echo esc_url(home_url('/llms.txt')); ?>" target="_blank"><?php echo esc_url(home_url('/llms.txt')); ?></a></li>

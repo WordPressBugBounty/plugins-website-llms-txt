@@ -1252,6 +1252,8 @@ class LLMS_Generator
             \WP_CLI::log('Clear cache');
         }
 
+        update_option('llms_last_generated', time(), false);
+
         do_action('wpseo_cache_clear_sitemap');
         do_action('llms_clear_seo_caches_rank_math');
     }

@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.5.2
+Stable tag: 8.5.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -90,6 +90,15 @@ Yes. On a network-activated install, each subsite gets its own rewrite rules, an
 
 
 == Changelog ==
+
+= 8.5.3 =
+
+🛠 Improvements
+
+• "Clear caches" now rebuilds the llms.txt file immediately, in the same request, instead of scheduling a background WP-Cron job. On hosts where WP-Cron never fires, that scheduled rebuild silently never ran and the file stayed stale even though the button reported success. You will now see the file update right away.
+• "Clear caches" also no longer wipes the plugin's cached post data, so it stays fast even on large sites. If you need a full rebuild from scratch, that is what "Delete and recreate" is for; since 8.5.2 both produce correct URLs on WPML sites.
+• The File Status card now shows when llms.txt was last generated, so you can confirm updates at a glance without checking file timestamps.
+• The settings page now warns you when WP-Cron appears not to be running, since automatic updates (after saving a post, and the daily/weekly schedule) depend on it. The buttons on the settings page work either way.
 
 = 8.5.2 =
 
