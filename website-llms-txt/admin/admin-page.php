@@ -216,6 +216,15 @@ if (!$llms_table_missing && class_exists('LLMS_DB') && method_exists('LLMS_DB', 
 }
 
 $llms_db_trouble = ($llms_table_missing || $llms_db_behind || $llms_schema_incomplete || !empty($llms_db_condition));
+
+// A served llms.txt the plugin could not delete, read from its OWN option rather
+// than from llms_db_condition. It is not a schema record and must not be in that
+// slot: five separate places clear llms_db_condition when the schema looks
+// healthy, and one of them is schema_status(), which this screen calls a few
+// lines above. Putting it there made this page delete the very thing it renders.
+$llms_artifact_block = (class_exists('LLMS_DB') && method_exists('LLMS_DB', 'artifact_block'))
+    ? LLMS_DB::artifact_block()
+    : null;
 ?>
 
 <div class="wrap">
@@ -274,6 +283,27 @@ $llms_db_trouble = ($llms_table_missing || $llms_db_behind || $llms_schema_incom
                     <?php endif; ?>
                 </ul>
                 <p><?php esc_html_e('Deactivating and reactivating the plugin runs the update again. If it comes back, send this card to support.', 'website-llms-txt'); ?></p>
+            </div>
+            <?php endif; ?>
+
+            <?php if (is_array($llms_artifact_block) && !empty($llms_artifact_block['paths'])): ?>
+            <div class="card">
+                <h2><?php esc_html_e('An old llms.txt could not be removed', 'website-llms-txt'); ?></h2>
+                <p><?php esc_html_e('The plugin tried to delete a previously generated llms.txt and the file is still there. Until it can be removed, that older file is what visitors and AI crawlers receive, and it may contain content that is not publicly visible on your site.', 'website-llms-txt'); ?></p>
+                <ul>
+                    <?php foreach ($llms_artifact_block['paths'] as $llms_blocked_path): ?>
+                        <li><code><?php echo esc_html($llms_blocked_path); ?></code></li>
+                    <?php endforeach; ?>
+                    <?php if (!empty($llms_artifact_block['at'])): ?>
+                        <li>
+                            <?php
+                            /* translators: %s: date and time of the last attempt */
+                            printf(esc_html__('Last attempt %s.', 'website-llms-txt'), esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $llms_artifact_block['at'])));
+                            ?>
+                        </li>
+                    <?php endif; ?>
+                </ul>
+                <p><?php esc_html_e('Make the file writable by WordPress, or delete it yourself. The plugin keeps retrying and clears this notice on its own once the file is gone.', 'website-llms-txt'); ?></p>
             </div>
             <?php endif; ?>
 

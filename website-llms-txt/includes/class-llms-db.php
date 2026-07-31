@@ -147,6 +147,18 @@ class LLMS_DB
     const CONDITION_REFRESH_AFTER = 60;
 
     /**
+     * Whether this request has already counted an automatic rebuild attempt.
+     *
+     * Request scoped on purpose. It exists so the admin one-shot, which counts
+     * its attempt up front in claim_rebuild_attempt(), is not counted a second
+     * time by note_document_absent() when its run then fails. See
+     * note_rebuild_attempt().
+     *
+     * @var bool
+     */
+    protected static $attempt_recorded_this_request = false;
+
+    /**
      * Run every step this install has not run yet.
      *
      * Cheap to call on every request: one autoloaded option read, a numeric
@@ -1123,7 +1135,37 @@ class LLMS_DB
      */
     protected static function step_rebuild_generated_file($lock_name = '', $token = '')
     {
-        return static::maybe_clean_artifacts();
+        if (static::maybe_clean_artifacts()) {
+            return true;
+        }
+
+        /*
+         * A served path this process cannot remove is NOT a ladder failure, and
+         * reporting it as one does three bad things at once, all measured:
+         *
+         *  - run_step() records a step_failed condition with an empty detail,
+         *    which is a false statement about the schema: nothing about the
+         *    schema failed;
+         *  - llms_db_version stays pinned below the target, so a schema state
+         *    that is genuinely complete reports as incomplete;
+         *  - this step is STEP_EXCLUSIVE, so the ladder takes a lease and runs
+         *    on EVERY request for ever. Measured at 40 requests: 40 lease
+         *    acquisitions and 120 queries, against 1 and 3 before this change.
+         *    That is precisely the unbounded per-request cost the rate limit in
+         *    maybe_clean_artifacts() exists to prevent, arriving through a door
+         *    the rate limit does not cover.
+         *
+         * The step's own work is done: everything that could be deleted was, the
+         * survivor is recorded, and the retry lives on the per-request cleanup
+         * call in run(), where artifact_blocked_recently() bounds it. So report
+         * the step complete and let that path own the healing.
+         *
+         * Only the artifact-blocked case is forgiven. A deferral for a
+         * generation in flight, or a lease we could not take, still returns
+         * false so the ladder tries again on the next request, which is the
+         * behaviour those two have always had.
+         */
+        return static::artifact_blocked_recently();
     }
 
     /**
@@ -1358,6 +1400,8 @@ class LLMS_DB
             true
         );
 
+        static::$attempt_recorded_this_request = true;
+
         return true;
     }
 
@@ -1424,6 +1468,112 @@ class LLMS_DB
         if (static::rebuild_pending()) {
             delete_option(static::rebuild_option_name());
         }
+
+        // The obligation is discharged, so the retry booked against it should go
+        // with it. Until 8.5.5 only the admin one-shot cleared the scheduled
+        // event, and only when it had run the generation itself, so a rebuild
+        // that succeeded from cron, from a post save or from "Generate now" left
+        // the next llms_update_llms_file_cron standing and the site ran one
+        // extra full generation for nothing. Same omission as A2, smaller.
+        wp_clear_scheduled_hook('llms_update_llms_file_cron');
+
+        static::forget_artifact_block_if_clear();
+    }
+
+    /**
+     * Retire the undeletable-artifact record once the path really has gone.
+     *
+     * There are two ways a blocked site heals and only one of them used to be
+     * covered. clear_artifact_blocked() has a single caller, inside
+     * clean_artifacts(), which is only reachable while lifecycle_state() is
+     * stale. The rebuild is scheduled 30 seconds out and the block window is
+     * 300, so the ordinary sequence is: the host makes the file removable, the
+     * owed rebuild fires first, a document is promoted, the state becomes
+     * current, and clean_artifacts() is never reached again. That orphaned the
+     * record with nothing left able to clear it, and the card went on telling
+     * the owner that an older file was being served when it was not. Measured:
+     * still showing 4,000 seconds past the window, on a site serving its own
+     * freshly generated document.
+     *
+     * The other ordering, where the window expires while the state is still
+     * stale, does clear, which is exactly why this was easy to miss.
+     *
+     * Checked against the filesystem rather than assumed, because a promote does
+     * NOT prove the survivor is gone. promote_generated_file() returns true when
+     * the uploads copy promoted even if the root copy could be neither replaced
+     * nor removed, which is a deliberate trade for the many sites that cannot
+     * write to ABSPATH at all. On a site where the root file is genuinely
+     * immutable the warning is still true after a successful generation, and it
+     * must stay on the screen. So: clear only when every recorded path has
+     * actually gone.
+     *
+     * Runs after a generation, not on ordinary requests, so it costs one option
+     * read per promote rather than a query per request on every healthy install.
+     *
+     * @return void
+     */
+    protected static function forget_artifact_block_if_clear()
+    {
+        $block = static::artifact_block();
+
+        if (null === $block) {
+            return;
+        }
+
+        if (!function_exists('llms_served_file_paths')) {
+            return;
+        }
+
+        /*
+         * The question is NOT "has the path gone". A first attempt asked that
+         * and could essentially never fire on a single site: the recorded path
+         * is usually ABSPATH/llms.txt, and by the time this runs the promote has
+         * put OUR OWN new document back at exactly that path, so it exists and
+         * the record was kept for ever.
+         *
+         * The question is "is this still a foreign document". Two ways it is
+         * not: the path is gone, or what is there now is what this run just
+         * wrote.
+         *
+         * The uploads copy is the reference for the second test. The promote
+         * moves the temp file onto it before it does anything else and returns
+         * false if that fails, so reaching here means it holds this run's
+         * document. Identified by its directory rather than by position in the
+         * list, because relying on the order of llms_served_file_paths() is the
+         * kind of assumption that breaks quietly.
+         */
+        $uploads = wp_get_upload_dir();
+        $basedir = isset($uploads['basedir']) ? trailingslashit($uploads['basedir']) : '';
+        $fresh   = null;
+
+        if ('' !== $basedir) {
+            foreach (llms_served_file_paths() as $served) {
+                if (0 === strpos($served, $basedir) && file_exists($served)) {
+                    $fresh = @md5_file($served);
+                    break;
+                }
+            }
+        }
+
+        foreach ($block['paths'] as $path) {
+            clearstatcache(true, $path);
+
+            if (!file_exists($path)) {
+                continue;
+            }
+
+            if (null !== $fresh && false !== $fresh && @md5_file($path) === $fresh) {
+                // This run wrote it. Not a survivor any more.
+                continue;
+            }
+
+            // Still a document we did not write, at a path we could not clear.
+            // The card is telling the truth; leave it alone. An unreadable
+            // reference copy lands here too, which is the conservative side.
+            return;
+        }
+
+        static::clear_artifact_blocked();
     }
 
     /**
@@ -1443,7 +1593,46 @@ class LLMS_DB
     {
         static::stamp_artifacts();
 
+        // Record the attempt HERE, where the outcome is known, not only in the
+        // admin one-shot's claim. Until 8.5.5 the counter was advanced by
+        // claim_rebuild_attempt() alone, which the WP-Cron route never calls, so
+        // rebuild_attempts() stayed 0 on that route and rebuild_retry_delay()
+        // below always returned its 30 second default. A site whose generation
+        // kept failing therefore ran a full crawl of every post every 30
+        // seconds, indefinitely, and the docblock on REBUILD_FREE_ATTEMPTS said
+        // the opposite. Both routes now share one counter, advanced once per
+        // run by whichever of them made the run.
+        static::note_rebuild_attempt();
+
         static::request_rebuild(static::rebuild_retry_delay());
+    }
+
+    /**
+     * Advance the automatic-retry counter, once per request.
+     *
+     * The admin one-shot advances it in claim_rebuild_attempt(), before the run,
+     * because a run that dies in a way no handler sees (a SIGKILL, an OOM) must
+     * still count against the budget or that route could retry for ever. This
+     * method is for the routes that have no claim step. The request-scoped guard
+     * keeps the admin route at one attempt per run rather than two, which is
+     * what REBUILD_FREE_ATTEMPTS is documented to mean and what the acceptance
+     * bar was measured against.
+     *
+     * @return void
+     */
+    protected static function note_rebuild_attempt()
+    {
+        if (static::$attempt_recorded_this_request) {
+            return;
+        }
+
+        update_option(
+            static::rebuild_option_name(),
+            (static::rebuild_attempts() + 1) . ':' . time(),
+            true
+        );
+
+        static::$attempt_recorded_this_request = true;
     }
 
     /**
@@ -1669,6 +1858,18 @@ class LLMS_DB
         }
 
         /*
+         * The state is stale, and one reason it can be permanently stale is a
+         * served path this process cannot remove (see clean_artifacts()). That
+         * site would otherwise run a cache purge query and take a lease on every
+         * request, for ever, which is the cost A2 was. One attempt per
+         * REBUILD_RETRY_AFTER is enough to heal the moment the host makes the
+         * path removable.
+         */
+        if (static::artifact_blocked_recently()) {
+            return false;
+        }
+
+        /*
          * Serialised, because two requests both deleting the file and both
          * asking for a rebuild is wasteful rather than wrong, and because the
          * DELETE below is worth doing once. A request that cannot take the lease
@@ -1819,15 +2020,183 @@ class LLMS_DB
         // the evidence this is about.
         $claimed = static::stamp_claims_a_document();
 
-        $deleted = (int) llms_delete_generated_files();
+        $survivors = array();
+        $deleted   = (int) llms_delete_generated_files($survivors);
 
         if ($deleted > 0 || $claimed) {
             static::request_rebuild();
         }
 
+        if (!empty($survivors)) {
+            /*
+             * A served document we could not remove is still answering
+             * /llms.txt. On an 8.5.3 -> 8.5.4 update that is very likely the
+             * pre-fix document, which is the one carrying content this release
+             * exists to withhold.
+             *
+             * DO NOT STAMP. The stamp records what this plugin deliberately
+             * left on disk, and we did not leave this. Stamping it would make
+             * lifecycle_state() answer `current` on the next request and the
+             * cleanup would never look at it again, which is exactly how 8.5.4
+             * shipped and why 8.5.5 exists.
+             *
+             * Leaving the stamp disagreeing with the disk keeps the state at
+             * `stale`, which is the state that retries this cleanup. So the
+             * site heals itself the moment the host makes the path removable,
+             * and until then the record below says so on the settings screen
+             * instead of the failure being silent. maybe_clean_artifacts() rate
+             * limits the retry.
+             *
+             * KNOWN RESIDUAL, and it is the honest limit of this fix. This
+             * covers the migration. It does not cover a later rebuild adopting
+             * the same survivor: promote_generated_file() returns true when the
+             * uploads copy promoted even if the root copy could be neither
+             * replaced nor removed, note_document_promoted() then stamps what is
+             * on disk, and the state becomes `current` with the survivor blessed.
+             * From there this cleanup is never reached again.
+             *
+             * Not closed in 8.5.5 on purpose. The common shape of "PHP cannot
+             * write the root file", a read-only ABSPATH with a writable
+             * llms.txt, is already handled: promote's last-resort overwrite
+             * replaces the contents in place, so there is no stale document
+             * left. What remains is a genuinely immutable file (chflags uchg,
+             * chattr +i), and for that the plugin has no move available: it
+             * cannot delete it, cannot overwrite it, and retrying forever would
+             * add cost without changing anything, while a cleanup pass that DID
+             * run again would delete the good uploads copy trying. The remedy is
+             * the owner's, so what 8.5.5 owes them is a permanent, accurate
+             * notice naming the path, which is what the block record is and why
+             * forget_artifact_block_if_clear() re-checks the filesystem rather
+             * than trusting a successful promote. Fixing the adoption itself
+             * means making the fingerprint reflect ownership rather than what
+             * happens to be on disk, which is an 8.6.0-sized change.
+             */
+            static::request_rebuild();
+
+            static::note_artifact_blocked($survivors);
+
+            return false;
+        }
+
+        static::clear_artifact_blocked();
+
         static::stamp_artifacts();
 
         return true;
+    }
+
+    /**
+     * Option recording when the cleanup last found a served path it could not
+     * remove.
+     *
+     * Deliberately NOT the condition record, even though that carries a
+     * timestamp. record_condition() returns early without refreshing its
+     * timestamp when the same code and the same detail are recorded again,
+     * which is the ordinary case here, so a rate limit read from it would open
+     * after the first interval and never close again. That is the same shape of
+     * unbounded retry as A2, and getting it wrong here would put a query and a
+     * lease acquisition on every request of a broken site.
+     *
+     * autoload = no, because a healthy install never reads it: lifecycle_state()
+     * answers current, none or owed and maybe_clean_artifacts() returns before
+     * this is consulted.
+     *
+     * @return string
+     */
+    protected static function artifact_block_option_name()
+    {
+        return 'llms_artifact_undeletable_at';
+    }
+
+    /**
+     * Record that the cleanup could not clear a served path.
+     *
+     * @return void
+     */
+    protected static function note_artifact_blocked($paths)
+    {
+        update_option(
+            static::artifact_block_option_name(),
+            array(
+                'at'    => time(),
+                'paths' => array_values(array_map('strval', (array) $paths)),
+            ),
+            false
+        );
+    }
+
+    /**
+     * The current block, for anything that needs to show it.
+     *
+     * DELIBERATELY NOT a condition record, and that is the whole point of this
+     * option. llms_db_condition is the schema machinery's slot, and five
+     * separate places clear it: run_step() on success, the two repair paths,
+     * ensure_baseline() through clear_condition_if_present(), and schema_status()
+     * when it finds the schema complete. Every one of them is correct about a
+     * SCHEMA record and wrong about this one, which is a statement about the
+     * filesystem that a healthy database does not disprove.
+     *
+     * 8.5.5 tried putting it in that slot and then exempting it. Measured, it was
+     * still deleted in the same request by run_step()'s success path, and once
+     * that was understood, by the settings screen itself: the screen calls
+     * schema_status(), which cleared it, so the one page whose job was to show
+     * the path rendered it once and then wiped it. Exempting five call sites one
+     * at a time is how a cross-cutting change leaves exactly one line unconverted.
+     * Its own option cannot be reached by any of them.
+     *
+     * @return array|null ['at' => int, 'paths' => string[]], or null when clear.
+     */
+    public static function artifact_block()
+    {
+        $stored = get_option(static::artifact_block_option_name());
+
+        if (!is_array($stored) || !isset($stored['at']) || empty($stored['paths'])) {
+            return null;
+        }
+
+        return array(
+            'at'    => (int) $stored['at'],
+            'paths' => array_values((array) $stored['paths']),
+        );
+    }
+
+    /**
+     * Forget any previous block, because the cleanup has just succeeded.
+     *
+     * @return void
+     */
+    protected static function clear_artifact_blocked()
+    {
+        if (false !== get_option(static::artifact_block_option_name(), false)) {
+            delete_option(static::artifact_block_option_name());
+        }
+    }
+
+    /**
+     * Whether the cleanup was blocked recently enough that retrying now is
+     * only cost.
+     *
+     * A record stamped in the future, which a clock set forward and later
+     * corrected produces, is treated as no record rather than blocking the
+     * retry until the clock catches up.
+     *
+     * @return bool
+     */
+    protected static function artifact_blocked_recently()
+    {
+        $block = static::artifact_block();
+
+        if (null === $block) {
+            return false;
+        }
+
+        $at = $block['at'];
+
+        if ($at <= 0 || $at > time()) {
+            return false;
+        }
+
+        return (time() - $at) < static::REBUILD_RETRY_AFTER;
     }
 
     /**
@@ -2031,6 +2400,11 @@ class LLMS_DB
      */
     protected static function condition_survives_healthy_request($code)
     {
+        // Schema records only. An undeletable served artifact was briefly added
+        // here and it was the wrong home: every consumer of this list treats
+        // "the schema is fine" as disproving the record, and a file the
+        // filesystem will not let go of is not disproved by a healthy database.
+        // It has its own option now. See LLMS_DB::artifact_block().
         return in_array(
             $code,
             array('baseline_replay_incomplete', 'baseline_replay_failed'),

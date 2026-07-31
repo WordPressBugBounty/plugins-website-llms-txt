@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.5.4
+Stable tag: 8.5.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -97,6 +97,20 @@ No. The two plugins cannot be active on the same site. Both define a PHP class n
 
 
 == Changelog ==
+
+= 8.5.5 =
+
+🔒 Security
+
+• Follow-up to 8.5.4. On some sites the old llms.txt could not be deleted during the update, and the plugin treated it as removed. Those sites went on serving the old file, which may have contained content that is not publicly visible. The plugin now checks that the file was really removed, keeps trying, and tells you on the settings screen if something is in the way.
+
+🛠 Fixes
+
+• A site whose file could not be generated no longer retries every 30 seconds without end. Repeated failures now back off, as the plugin already intended.
+• A successful rebuild no longer leaves an extra scheduled regeneration behind.
+• Deactivating the plugin no longer leaves its rewrite rule behind in your site's stored permalink rules.
+
+Updating is recommended for all sites, and especially for anyone who updated to 8.5.4.
 
 = 8.5.4 =
 

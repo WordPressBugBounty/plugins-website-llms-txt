@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Website LLMs.txt
  * Description: Generates and manages an llms.txt file, a structured, AI-ready index that helps large language models like ChatGPT, Claude, and Perplexity understand your site's most important content.
- * Version: 8.5.4
+ * Version: 8.5.5
  * Author: Ryan Howard
  * Author URI: https://completeseo.com/author/ryan-howard/
  * Text Domain: website-llms-txt
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('WEBSITE_LLMS_TXT_VERSION', '8.5.4');
+define('WEBSITE_LLMS_TXT_VERSION', '8.5.5');
 // Schema version, moved only when the database layout changes. Kept apart from
 // the plugin version so a patch release does not re-run the migration ladder. It
 // must equal the highest step registered in LLMS_DB::steps(), which refuses to
@@ -222,17 +222,47 @@ function llms_generated_artifact_fingerprint() {
  *
  * @return int Number of artifacts that existed and are now gone.
  */
-function llms_delete_generated_files() {
-    $found = 0;
+function llms_delete_generated_files(&$survivors = null) {
+    $survivors = array();
+    $deleted   = 0;
+    $served    = llms_served_file_paths();
 
     foreach (llms_generated_file_paths() as $path) {
-        if (file_exists($path)) {
-            $found++;
-            wp_delete_file($path);
+        if (!file_exists($path)) {
+            continue;
         }
+
+        wp_delete_file($path);
+
+        // wp_delete_file() returns nothing and unlink() can fail for reasons
+        // this process cannot see: a webroot the PHP user cannot write while
+        // the file in it is writable, an immutable flag set by a security
+        // plugin or a host, an out-of-quota or read-only uploads directory, or
+        // any filesystem where unlink() is not reliable. Until 8.5.5 this
+        // function counted the files that EXISTED and reported that as the
+        // number deleted, so a file that survived was recorded as removed.
+        // clean_artifacts() then stamped whatever was on disk as this plugin's
+        // own document, which on an 8.5.3 -> 8.5.4 update meant the pre-fix
+        // document, restricted content and all, was adopted as ours and served
+        // for ever while the state machine reported the site as healthy. Ask
+        // the filesystem again rather than assuming.
+        clearstatcache(true, $path);
+
+        if (file_exists($path)) {
+            if (in_array($path, $served, true)) {
+                // Only a SERVED path matters here. The scratch copy surviving
+                // is untidy; a served one surviving means a document we did not
+                // write is still answering /llms.txt.
+                $survivors[] = $path;
+            }
+
+            continue;
+        }
+
+        $deleted++;
     }
 
-    return $found;
+    return $deleted;
 }
 
 /*
@@ -254,7 +284,16 @@ register_deactivation_hook(__FILE__, function() {
 
     llms_delete_generated_files();
 
-    flush_rewrite_rules();
+    // Delete the stored rules rather than flushing them. A deactivation request
+    // still has this plugin loaded and its init:0 callback has already added the
+    // llms.txt rule to $wp_rewrite, so flush_rewrite_rules() here regenerates
+    // from a rule set that still contains ours and writes it straight back. The
+    // rule then outlives the plugin in the option indefinitely, and anything
+    // that later registers the llms_txt query var inherits it. Deleting the
+    // option makes the next request regenerate in its own bootstrap, without
+    // this plugin, which is the same technique LLMS_Core::invalidate_rewrite_rules()
+    // uses on a network and for the same reason.
+    delete_option('rewrite_rules');
 });
 
 /**

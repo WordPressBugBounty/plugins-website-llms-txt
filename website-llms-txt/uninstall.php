@@ -12,6 +12,9 @@ delete_option('llms_db_version');
 delete_option('llms_db_condition');
 delete_option('llms_rebuild_pending');
 delete_option('llms_artifact_stamp');
+// Records when the cleanup last found a served path it could not remove, and
+// rate limits the retry. A reinstall must not inherit a block written before it.
+delete_option('llms_artifact_undeletable_at');
 // The two lease locks. Neither should outlive the request that took it, and
 // both do when that request is killed rather than unwound: an OOM or a
 // max_execution_time kill during a generation leaves llms_generation_lock
