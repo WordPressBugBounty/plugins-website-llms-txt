@@ -39,7 +39,7 @@ class LLMS_VisibilityKit
             'email'         => $email,
             'domain'        => $domain,
             'source'        => 'llmstxt-plugin',
-            'pluginVersion' => defined('LLMS_VERSION') ? LLMS_VERSION : 'unknown',
+            'pluginVersion' => defined('WEBSITE_LLMS_TXT_VERSION') ? WEBSITE_LLMS_TXT_VERSION : 'unknown',
         ];
         if ($takeover) {
             $payload['takeover'] = true;
@@ -119,7 +119,7 @@ class LLMS_VisibilityKit
             'vk-core',
             'https://cdn.visibilitykit.ai/t/' . sanitize_text_field($embed_token) . '/vk.js',
             [],
-            LLMS_VERSION,
+            WEBSITE_LLMS_TXT_VERSION,
             true
         );
     }

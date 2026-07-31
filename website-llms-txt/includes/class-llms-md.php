@@ -108,6 +108,16 @@ class LLMS_MD
             return;
         }
 
+        // A nonce says the request came from our form. It does not say the person
+        // sending it may edit this post: the nonce is tied to the action and the
+        // session, not to the post id, so anybody who can reach a page carrying
+        // one could send it back with somebody else's post id. Everything below
+        // writes post meta and uploads a file against $post_id, so the
+        // capability check belongs here, before any of it.
+        if ( ! current_user_can( 'edit_post', $post_id ) ) {
+            return;
+        }
+
         if ( isset( $_POST['llmstxt-page-md'] ) ) {
             update_post_meta( $post_id, '_llmstxt_page_md', 'yes' );
         } else {
@@ -137,6 +147,8 @@ class LLMS_MD
         if ( isset( $_FILES['md_file'] ) && ! empty( $_FILES['md_file']['tmp_name'] ) ) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
 
+            $this->protect_md_dir();
+
             add_filter( 'upload_dir', [ $this, 'llms_md_upload_dir' ] );
             $uploaded = wp_handle_upload( $_FILES['md_file'], [
                 'test_form' => false
@@ -144,6 +156,78 @@ class LLMS_MD
             remove_filter( 'upload_dir', [ $this, 'llms_md_upload_dir' ] );
             if ( ! isset( $uploaded['error'] ) ) {
                 update_post_meta( $post_id, '_md_url', esc_url_raw( $uploaded['url'] ) );
+            }
+        }
+    }
+
+    /**
+     * Put index.php and .htaccess into uploads/llms_md/.
+     *
+     * The .md files in here are meant to be fetched: their URLs are written into
+     * the generated llms.txt as Markdown links, so this is not about hiding them.
+     * It is about the two things a writable upload directory should never do.
+     *
+     *  - index.php, so a request for the directory itself gets an empty page
+     *    instead of a listing of every file in it. This is the part that works
+     *    everywhere, including nginx, and it is why there is no Options -Indexes
+     *    in the .htaccess: with an index file the listing is already gone, and
+     *    Options is the directive most likely to be refused by AllowOverride and
+     *    turn the whole directory into a 500.
+     *  - .htaccess, so that a file that arrives here with an executable extension
+     *    is served as bytes rather than run. upload_mimes() only adds .md, but
+     *    the same directory is reachable by anything else that decides to write
+     *    to it, and defence here costs nothing.
+     *
+     * Apache only. nginx and IIS ignore .htaccess entirely, which is exactly why
+     * the index.php half is not skipped when it is written.
+     *
+     * Written once, when a file is first uploaded, and never rewritten, so an
+     * administrator who edits either file keeps their edit.
+     *
+     * @return void
+     */
+    private function protect_md_dir() {
+        $upload_dir = wp_upload_dir();
+
+        if ( ! empty( $upload_dir['error'] ) || empty( $upload_dir['basedir'] ) ) {
+            return;
+        }
+
+        $dir = trailingslashit( $upload_dir['basedir'] ) . 'llms_md';
+
+        if ( ! wp_mkdir_p( $dir ) ) {
+            return;
+        }
+
+        $htaccess = "# Files in this directory are linked from the generated llms.txt and are\n"
+            . "# meant to be downloadable. This only stops anything here being executed.\n"
+            . "<FilesMatch \"\\.(?i:php|php[0-9]|phtml|phps|phar|pl|py|cgi|asp|aspx|jsp|sh|shtml)$\">\n"
+            . "  <IfModule mod_authz_core.c>\n"
+            . "    Require all denied\n"
+            . "  </IfModule>\n"
+            . "  <IfModule !mod_authz_core.c>\n"
+            . "    Order allow,deny\n"
+            . "    Deny from all\n"
+            . "  </IfModule>\n"
+            . "</FilesMatch>\n";
+
+        $files = array(
+            $dir . '/index.php' => "<?php\n// Silence is golden.\n",
+            $dir . '/.htaccess' => $htaccess,
+        );
+
+        global $wp_filesystem;
+
+        foreach ( $files as $path => $contents ) {
+            if ( file_exists( $path ) ) {
+                continue;
+            }
+
+            if ( $wp_filesystem ) {
+                $wp_filesystem->put_contents( $path, $contents, FS_CHMOD_FILE );
+            } else {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- WP_Filesystem is not available on this request and the alternative is leaving the directory unprotected.
+                @file_put_contents( $path, $contents );
             }
         }
     }

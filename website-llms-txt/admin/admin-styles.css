@@ -439,3 +439,38 @@
 .card p.submit {
     margin-bottom: 4px;
 }
+
+/* --- Excluded content summary --- */
+.llms-excluded-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+}
+
+.llms-excluded-table th,
+.llms-excluded-table td {
+    text-align: left;
+    vertical-align: top;
+    padding: 6px 10px 6px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.llms-excluded-table th {
+    font-weight: 600;
+    color: #475569;
+    border-bottom-color: #cbd5e1;
+}
+
+.llms-excluded-table td:nth-child(2) {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.llms-excluded-table td:nth-child(3) {
+    color: #475569;
+}
+
+/* --- Database update, shown only when the schema ladder is not well --- */
+.llms-condition-card {
+    border-left: 4px solid #d97706;
+}

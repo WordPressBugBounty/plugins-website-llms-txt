@@ -16,8 +16,28 @@ class LLMS_Yoast_Integration {
     }
 
     public function get_site_meta_description( $site_description ) {
-        if (class_exists('WPSEO_Options')) {
-            $yoast_description = YoastSEO()->meta->for_posts_page()->description;
+        // Guard on YoastSEO(), not on WPSEO_Options. WPSEO_Options has existed since
+        // Yoast 1.5; YoastSEO() arrived in Yoast 14.0, so testing the old symbol and
+        // then calling the new one is a fatal on every generation for anyone on an
+        // older Yoast. Same shape as the str_contains() defect fixed in this release:
+        // a newer symbol called behind a guard for an older one.
+        //
+        // DO NOT reach for isset() or empty() on ->description. Yoast's Meta::__get()
+        // falls back to the context object when the presentation has no such property,
+        // and Meta::__isset() does not. `description` is a context property
+        // (Meta_Tags_Context::generate_description()); Indexable_Presentation declares
+        // meta_description, open_graph_description and twitter_description, but no
+        // description. So on every modern Yoast the value is readable while isset() is
+        // false, and empty() is false too because empty() calls __isset() first. An
+        // earlier 8.5.4 revision used isset() here and silently dropped the site
+        // description out of the file on every Yoast site. Measured on Yoast 28.1.
+        //
+        // Reading into a variable first is 8.5.3's own shape and is what makes this
+        // correct: it calls __get() and nothing else.
+        if (function_exists('YoastSEO')) {
+            $yoast = YoastSEO();
+            $meta = isset($yoast->meta) ? $yoast->meta->for_posts_page() : null;
+            $yoast_description = is_object($meta) ? $meta->description : null;
             if($yoast_description) {
                 $site_description = $yoast_description;
             }
@@ -25,6 +45,21 @@ class LLMS_Yoast_Integration {
         return $site_description;
     }
 
+    // DELIBERATELY NOT CHANGED IN 8.5.4, and not an oversight.
+    //
+    // This carries the same isset() defect described above, so on every modern Yoast
+    // it always falls through and this plugin has never used a Yoast per-post
+    // description. That is a real bug and it is pre-existing: 8.5.3 has this exact
+    // line.
+    //
+    // Correcting it here would start injecting Yoast's per-post descriptions into the
+    // generated file on every site running Yoast, which is a broad output change on a
+    // large population, in a release whose whole discipline is that a site with no
+    // gating plugin sees no change it did not ask for. Restoring the sibling above is
+    // putting back something 8.5.3 did; changing this one would be shipping something
+    // 8.5.3 never did, under cover of a security release.
+    //
+    // Fix it in 8.6.0, where it can be its own change with its own changelog line.
     public function get_post_meta_description( $meta_description, $post ) {
         if (function_exists('YoastSEO') && isset(YoastSEO()->meta, YoastSEO()->meta->for_post($post->ID)->description)) {
             return YoastSEO()->meta->for_post($post->ID)->description;

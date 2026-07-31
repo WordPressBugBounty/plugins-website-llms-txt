@@ -3,6 +3,49 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+/*
+ * Every card on this screen is its own form, and each one posts the whole
+ * llms_generator_settings option, so a form has to re-submit the settings it
+ * does not itself edit as hidden inputs or saving one card would wipe the
+ * others.
+ *
+ * The carry is written by key at every depth. Writing an array member as
+ * "[post_name][]" drops the key, and post_name is a map of post type label to
+ * the custom name shown in the file, so an owner who renamed a custom post
+ * type lost that name on every save of any other card. Recursing also means a
+ * setting nested more than two deep is carried rather than turned into the
+ * string "Array".
+ */
+if (!function_exists('llms_render_settings_carry')) {
+    function llms_render_settings_carry($settings, $skip = array(), $prefix = 'llms_generator_settings')
+    {
+        if (!is_array($settings)) {
+            return;
+        }
+        foreach ($settings as $key => $value) {
+            if (in_array($key, $skip, true)) {
+                continue;
+            }
+            $name = $prefix . '[' . $key . ']';
+            if (is_array($value)) {
+                llms_render_settings_carry($value, array(), $name);
+                continue;
+            }
+            if (is_object($value) || is_null($value)) {
+                continue;
+            }
+            if (is_bool($value)) {
+                $value = $value ? '1' : '';
+            }
+            printf(
+                '<input type="hidden" name="%s" value="%s"/>',
+                esc_attr($name),
+                esc_attr((string) $value)
+            );
+        }
+    }
+}
+
 global $wpdb;
 $table = $wpdb->prefix . 'llms_txt_cache';
 
@@ -82,6 +125,97 @@ if (isset($_GET['settings-updated']) &&
 }
 
 // VK announcement banner now renders via admin_notices across wp-admin (see LLMS_Core::render_vk_banner).
+
+// ---------------------------------------------------------------------------
+// Excluded content, spec 3.9.
+//
+// Two different things, kept apart on purpose. The RECORD is what the last
+// generation actually left out, snapshotted by LLMS_Core::record_excluded_summary()
+// and stored in llms_last_excluded. The LIVE read is what would be left out if the
+// file were generated now. They disagree whenever a plugin has been activated or
+// deactivated since, and the disagreement is exactly what somebody looking at this
+// screen needs to see.
+// ---------------------------------------------------------------------------
+$llms_excluded = get_option(LLMS_Core::EXCLUDED_OPTION);
+$llms_excluded = is_array($llms_excluded) ? $llms_excluded : array();
+$llms_rows = LLMS_Core::excluded_summary_rows($llms_excluded);
+
+$llms_live_types = array();
+$llms_live_site_gated = false;
+if (class_exists('LLMS_Access')) {
+    $llms_live_types = LLMS_Access::gated_post_types();
+    $llms_live_site_gated = LLMS_Access::site_is_gated();
+}
+
+// Group the live post types by the reason they carry, so a site running one
+// plugin gets one line naming it rather than one line per post type.
+$llms_live_by_reason = array();
+foreach ($llms_live_types as $llms_type => $llms_reason) {
+    $llms_obj = get_post_type_object($llms_type);
+    $llms_live_by_reason[$llms_reason][] = ($llms_obj && isset($llms_obj->labels->name)) ? $llms_obj->labels->name : $llms_type;
+}
+
+$llms_precise_on = LLMS_Core::precise_access_enabled();
+
+// When the file was last generated to completion. Read once here because the
+// Excluded content card needs it as well as the File Status card: the record
+// above is written by a generation ATTEMPT and llms_last_generated is only
+// advanced by an attempt that finished, so an attempt that died after the read
+// pass leaves a summary describing a document that was never written.
+$llms_last_generated = (int) get_option('llms_last_generated');
+$llms_record_time = isset($llms_excluded['time']) ? (int) $llms_excluded['time'] : 0;
+$llms_record_unfinished = ($llms_record_time > 0 && $llms_record_time > $llms_last_generated);
+
+// ---------------------------------------------------------------------------
+// The schema condition, spec 3.1 and the round 3 verification of it.
+//
+// The record is RE-CHECKED rather than trusted, and there are two separate
+// reasons for that.
+//
+// A failed baseline replay writes llms_db_condition and the very next ordinary
+// request deletes it again while the schema stays incomplete, so a screen that
+// only rendered the record would show nothing on exactly the install that needs
+// it.
+//
+// And the recorded version can be right while the schema is not. A step that
+// records its version and whose ALTER did not take leaves llms_db_version equal
+// to LLMS_DB_VERSION over a table that is missing a column or an index, which no
+// version comparison can see. LLMS_DB::schema_status() answers that by looking at
+// the table, and it is called here and nowhere else because it costs SHOW COLUMNS
+// and SHOW INDEX. The card still works without it, on the two checks below, so
+// this screen does not depend on that method existing.
+// ---------------------------------------------------------------------------
+$llms_db_condition = get_option('llms_db_condition');
+$llms_db_condition = is_array($llms_db_condition) ? $llms_db_condition : array();
+$llms_db_installed = class_exists('LLMS_DB') ? LLMS_DB::installed_version() : 0;
+$llms_db_target = defined('LLMS_DB_VERSION') ? (int) LLMS_DB_VERSION : 0;
+$llms_table_missing = !$wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $wpdb->esc_like($table)));
+$llms_db_behind = ($llms_db_target > 0 && $llms_db_installed < $llms_db_target);
+
+$llms_schema_incomplete = false;
+$llms_schema_missing = array();
+if (!$llms_table_missing && class_exists('LLMS_DB') && method_exists('LLMS_DB', 'schema_status')) {
+    $llms_schema = LLMS_DB::schema_status();
+    if (is_array($llms_schema)) {
+        if (isset($llms_schema['version'])) {
+            $llms_db_installed = (int) $llms_schema['version'];
+        }
+        if (isset($llms_schema['target']) && (int) $llms_schema['target'] > 0) {
+            $llms_db_target = (int) $llms_schema['target'];
+        }
+        $llms_db_behind = ($llms_db_target > 0 && $llms_db_installed < $llms_db_target);
+        $llms_schema_incomplete = isset($llms_schema['complete']) && !$llms_schema['complete'];
+        if (!empty($llms_schema['missing']) && is_array($llms_schema['missing'])) {
+            foreach ($llms_schema['missing'] as $llms_gap) {
+                if (is_scalar($llms_gap)) {
+                    $llms_schema_missing[] = (string) $llms_gap;
+                }
+            }
+        }
+    }
+}
+
+$llms_db_trouble = ($llms_table_missing || $llms_db_behind || $llms_schema_incomplete || !empty($llms_db_condition));
 ?>
 
 <div class="wrap">
@@ -91,12 +225,63 @@ if (isset($_GET['settings-updated']) &&
         <!-- ========== LEFT COLUMN ========== -->
         <div class="card-column">
 
+            <?php if ($llms_db_trouble): ?>
+            <!-- Database update, rendered only when there is something wrong -->
+            <div class="card llms-condition-card">
+                <h2><?php esc_html_e('Database update', 'website-llms-txt'); ?></h2>
+                <?php if ($llms_table_missing): ?>
+                    <p><?php esc_html_e('The table this plugin stores its content in is missing, so the file cannot be generated.', 'website-llms-txt'); ?></p>
+                <?php elseif ($llms_schema_incomplete && !$llms_db_behind): ?>
+                    <p><?php esc_html_e('The plugin\'s database update reports that it finished, but part of the table it should have changed is not there. The file may be missing content or may not update.', 'website-llms-txt'); ?></p>
+                <?php elseif ($llms_db_behind): ?>
+                    <p><?php esc_html_e('The plugin\'s database update did not finish, so the file may be missing content or may not update.', 'website-llms-txt'); ?></p>
+                <?php else: ?>
+                    <p><?php esc_html_e('The plugin recorded a problem with its database update.', 'website-llms-txt'); ?></p>
+                <?php endif; ?>
+                <ul class="llms-bullet-list">
+                    <li>
+                        <?php
+                        /* translators: 1: schema version this install is at, 2: schema version this plugin version expects */
+                        printf(esc_html__('Database version %1$s of %2$s.', 'website-llms-txt'), esc_html($llms_db_installed), esc_html($llms_db_target));
+                        ?>
+                    </li>
+                    <?php foreach ($llms_schema_missing as $llms_gap): ?>
+                        <li>
+                            <?php
+                            /* translators: %s: name of a database column or index that is absent */
+                            printf(esc_html__('Missing from the table: %s.', 'website-llms-txt'), esc_html($llms_gap));
+                            ?>
+                        </li>
+                    <?php endforeach; ?>
+                    <?php if (!empty($llms_db_condition['code'])): ?>
+                        <li>
+                            <?php
+                            /* translators: 1: machine-readable condition code, 2: migration step number */
+                            printf(esc_html__('Condition %1$s at step %2$s.', 'website-llms-txt'), '<code>' . esc_html($llms_db_condition['code']) . '</code>', esc_html(isset($llms_db_condition['step']) ? $llms_db_condition['step'] : '?'));
+                            ?>
+                        </li>
+                        <?php if (!empty($llms_db_condition['updated'])): ?>
+                            <li>
+                                <?php
+                                /* translators: %s: date and time the condition was last seen */
+                                printf(esc_html__('Last seen %s.', 'website-llms-txt'), esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $llms_db_condition['updated'])));
+                                ?>
+                            </li>
+                        <?php endif; ?>
+                        <?php if (!empty($llms_db_condition['detail'])): ?>
+                            <li><?php echo esc_html($llms_db_condition['detail']); ?></li>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </ul>
+                <p><?php esc_html_e('Deactivating and reactivating the plugin runs the update again. If it comes back, send this card to support.', 'website-llms-txt'); ?></p>
+            </div>
+            <?php endif; ?>
+
             <!-- File Status -->
             <div class="card">
                 <h2><?php esc_html_e('File Status', 'website-llms-txt'); ?></h2>
                 <?php if ($latest_post): ?>
                     <p><?php esc_html_e('File is being auto-generated based on your settings.', 'website-llms-txt'); ?></p>
-                    <?php $llms_last_generated = (int) get_option('llms_last_generated'); ?>
                     <?php if ($llms_last_generated): ?>
                         <p>
                             <?php
@@ -128,6 +313,168 @@ if (isset($_GET['settings-updated']) &&
                 </div>
             </div>
 
+            <!-- Excluded content -->
+            <div class="card">
+                <h2><?php esc_html_e('Excluded content', 'website-llms-txt'); ?></h2>
+
+                <?php if ($llms_live_site_gated): ?>
+                    <p><?php esc_html_e('Everything on this site is currently being left out of llms.txt, because an anonymous visitor cannot read any of it.', 'website-llms-txt'); ?></p>
+                <?php elseif ($llms_live_by_reason): ?>
+                    <p><?php esc_html_e('If the file were generated now, these post types would be left out.', 'website-llms-txt'); ?></p>
+                    <ul class="llms-bullet-list">
+                        <?php foreach ($llms_live_by_reason as $llms_reason => $llms_labels): ?>
+                            <li>
+                                <strong><?php echo esc_html(implode(', ', $llms_labels)); ?></strong>.
+                                <?php echo esc_html($llms_reason); ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php elseif (!$llms_precise_on): ?>
+                    <p><?php esc_html_e('Nothing is being left out of llms.txt beyond content an anonymous visitor cannot read, which is drafts, password protected posts and anything you have excluded yourself.', 'website-llms-txt'); ?></p>
+                <?php endif; ?>
+
+                <?php if ($llms_precise_on): ?>
+                    <?php
+                    /*
+                     * With per post evaluation on, the post type list is not the whole
+                     * answer. The readers decide one post at a time, and nothing short of
+                     * running them over the whole site knows what that comes to, which is
+                     * what the record below is. Saying "nothing is being left out" here
+                     * would be a claim this screen cannot support.
+                     */
+                    ?>
+                    <p><?php esc_html_e('Per post evaluation is on, so each post is judged on its own restriction data and what that came to is only known from the last time the file was generated.', 'website-llms-txt'); ?></p>
+                <?php endif; ?>
+
+                <?php if (empty($llms_excluded['time'])): ?>
+                    <p><?php esc_html_e('The file has not been generated since this version was installed, so there is nothing recorded yet.', 'website-llms-txt'); ?></p>
+                <?php else: ?>
+                    <?php
+                    /*
+                     * The record is written by a generation ATTEMPT, on shutdown, and
+                     * llms_last_generated is only advanced by an attempt that reached the
+                     * end. A run that stopped after the read pass therefore leaves a
+                     * summary of a document that was never written, and describing it as
+                     * "what was left out of the file" would be describing a file the site
+                     * is not serving. Say which one this is.
+                     */
+                    ?>
+                    <?php if ($llms_record_unfinished): ?>
+                        <p>
+                            <?php
+                            /* translators: %s: date and time of the generation attempt */
+                            printf(esc_html__('A generation started on %s and did not finish, so this is what that attempt had left out. It did not replace the file.', 'website-llms-txt'), '<strong>' . esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $llms_record_time)) . '</strong>');
+                            ?>
+                        </p>
+                        <?php if ($llms_last_generated): ?>
+                            <p>
+                                <?php
+                                /* translators: %s: date and time the llms.txt file was last generated in full */
+                                printf(esc_html__('The file being served is the one generated on %s.', 'website-llms-txt'), '<strong>' . esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $llms_last_generated)) . '</strong>');
+                                ?>
+                            </p>
+                        <?php else: ?>
+                            <p><?php esc_html_e('No generation has finished on this site yet, so there is no file to compare this against.', 'website-llms-txt'); ?></p>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <p>
+                            <?php
+                            /* translators: %s: date and time the llms.txt file was last generated */
+                            printf(esc_html__('When the file was generated on %s, this is what was left out of it.', 'website-llms-txt'), '<strong>' . esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), $llms_record_time)) . '</strong>');
+                            ?>
+                        </p>
+                    <?php endif; ?>
+
+                    <?php if (!$llms_rows['types'] && !$llms_rows['included'] && !$llms_rows['notes']): ?>
+                        <p><?php esc_html_e('That run left nothing out for a reason this plugin records. Content an anonymous visitor cannot read is never in the file and is not counted here.', 'website-llms-txt'); ?></p>
+                    <?php endif; ?>
+
+                    <?php if ($llms_rows['types']): ?>
+                        <table class="llms-excluded-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col"><?php esc_html_e('Post type', 'website-llms-txt'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Left out', 'website-llms-txt'); ?></th>
+                                    <th scope="col"><?php esc_html_e('Cause', 'website-llms-txt'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($llms_rows['types'] as $llms_row): ?>
+                                    <tr>
+                                        <td><?php echo esc_html($llms_row['label']); ?></td>
+                                        <td><?php echo esc_html($llms_row['count']); ?></td>
+                                        <td><?php echo esc_html($llms_row['detail']); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+
+                    <?php if ($llms_rows['included']): ?>
+                        <p>
+                            <?php
+                            $llms_included_bits = array();
+                            foreach ($llms_rows['included'] as $llms_type => $llms_count) {
+                                $llms_obj = get_post_type_object($llms_type);
+                                $llms_name = $llms_type;
+                                if ($llms_obj) {
+                                    $llms_name = (1 === (int) $llms_count && !empty($llms_obj->labels->singular_name))
+                                        ? $llms_obj->labels->singular_name
+                                        : $llms_obj->labels->name;
+                                }
+                                $llms_included_bits[] = (int) $llms_count . ' ' . $llms_name;
+                            }
+                            /* translators: %s: list of counts and post types, e.g. "3 Posts, 1 Page" */
+                            printf(esc_html__('The include setting in the editor kept %s in the file.', 'website-llms-txt'), '<strong>' . esc_html(implode(', ', $llms_included_bits)) . '</strong>');
+                            ?>
+                        </p>
+                    <?php endif; ?>
+
+                    <?php if ($llms_rows['notes']): ?>
+                        <ul class="llms-bullet-list">
+                            <?php foreach ($llms_rows['notes'] as $llms_note): ?>
+                                <li>
+                                    <?php echo esc_html($llms_note['detail']); ?>
+                                    <?php if ($llms_note['count'] > 1): ?>
+                                        <?php
+                                        /* translators: %s: number of entries this reason applied to */
+                                        printf(esc_html__('(%s entries)', 'website-llms-txt'), esc_html($llms_note['count']));
+                                        ?>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+
+                    <?php if (!empty($llms_excluded['truncated'])): ?>
+                        <p><?php esc_html_e('There were more reasons than this record keeps. The counts above are complete for the reasons shown.', 'website-llms-txt'); ?></p>
+                    <?php endif; ?>
+
+                    <?php if (!empty($llms_excluded['precise']) !== $llms_precise_on): ?>
+                        <p><strong><?php esc_html_e('Per post evaluation has been changed since this file was generated, so what is above is not what you would get now.', 'website-llms-txt'); ?></strong></p>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+
+            <!-- Per post evaluation -->
+            <div class="card">
+                <h2><?php esc_html_e('Per post evaluation', 'website-llms-txt'); ?></h2>
+                <p><?php esc_html_e('While an access control plugin is active, your posts and pages are left out of llms.txt, because there is no reliable way to tell from the database which of them a visitor can read.', 'website-llms-txt'); ?></p>
+                <p><?php esc_html_e('This setting hands that judgement to the plugin. It reads each access control plugin\'s own restriction data and decides for itself, post by post, which content is public. Where it decides wrong, restricted content is published in a file anyone can read. Several access control plugins store nothing at all on a restricted post, and some of them decide at the moment a visitor asks, in a way no stored data shows.', 'website-llms-txt'); ?></p>
+                <form method="post" action="options.php" id="llms-settings-access-form">
+                    <?php settings_fields('llms_generator_settings'); ?>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="llms_generator_settings[precise_access]" value="1" <?php checked($llms_precise_on); ?> />
+                            <strong><?php esc_html_e('Let the plugin decide for itself which restricted content is public, accepting that a wrong decision publishes content that should not be published', 'website-llms-txt'); ?></strong>
+                        </label>
+                    </p>
+                    <p><?php esc_html_e('The other way to get a specific post back into the file is the include setting on that post in the editor, which leaves the judgement with you.', 'website-llms-txt'); ?></p>
+                    <?php llms_render_settings_carry($settings, array('precise_access')); ?>
+                    <?php submit_button(esc_html__('Save settings', 'website-llms-txt')); ?>
+                </form>
+            </div>
+
             <!-- Content Settings -->
             <div class="card">
                 <h2><?php esc_html_e('Content Settings', 'website-llms-txt'); ?></h2>
@@ -143,6 +490,11 @@ if (isset($_GET['settings-updated']) &&
                         $post_types = get_post_types(array('public' => true), 'objects');
                         $ordered_types = array_flip($settings['post_types']);
                         $unordered_types = array();
+                        // Every label that gets a text input below. The hidden carry at the
+                        // end of this form uses it to re-submit the custom names belonging to
+                        // post types that are not currently registered, which is what a site
+                        // has while the plugin providing a post type is deactivated.
+                        $llms_named_labels = array();
                         foreach ($post_types as $post_type) {
                             if (in_array($post_type->name, array('attachment', 'llms_txt'))) continue;
                             if (!isset($ordered_types[$post_type->name])) {
@@ -154,11 +506,12 @@ if (isset($_GET['settings-updated']) &&
                                 $post_type = $post_types[$type_name];
                                 $all_count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", $post_type->name));
                                 $indexed_count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE type = %s", $post_type->name));
+                                $llms_named_labels[] = $post_type->labels->name;
                                 ?>
                                 <div class="sortable-item active" data-post-type="<?php echo esc_attr($post_type->name); ?>">
                                     <label>
                                         <input type="checkbox" name="llms_generator_settings[post_types][]" value="<?php echo esc_attr($post_type->name); ?>" checked>
-                                        <input type="text" name="llms_generator_settings[post_name][<?php echo esc_attr($post_type->labels->name); ?>]" value="<?php echo esc_attr( $settings['post_name'][esc_html($post_type->labels->name)] ?? '' ); ?>"/>
+                                        <input type="text" name="llms_generator_settings[post_name][<?php echo esc_attr($post_type->labels->name); ?>]" value="<?php echo esc_attr( $settings['post_name'][$post_type->labels->name] ?? '' ); ?>"/>
                                         <span class="dashicons dashicons-menu"></span>
                                         <?php echo esc_html($post_type->labels->name); ?>
                                         <small style="opacity: 0.7;">(<?php echo intval($indexed_count) . ' indexed of ' . intval($all_count); ?>)</small>
@@ -170,11 +523,12 @@ if (isset($_GET['settings-updated']) &&
                         foreach ($unordered_types as $post_type) {
                             $all_count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = %s", $post_type->name));
                             $indexed_count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE type = %s", $post_type->name));
+                            $llms_named_labels[] = $post_type->labels->name;
                             ?>
                             <div class="sortable-item" data-post-type="<?php echo esc_attr($post_type->name); ?>">
                                 <label>
                                     <input type="checkbox" name="llms_generator_settings[post_types][]" value="<?php echo esc_attr($post_type->name); ?>"/>
-                                    <input type="text" name="llms_generator_settings[post_name][<?php echo esc_attr($post_type->labels->name); ?>]" value="<?php echo esc_attr( $settings['post_name'][esc_html($post_type->labels->name)] ?? '' ); ?>"/>
+                                    <input type="text" name="llms_generator_settings[post_name][<?php echo esc_attr($post_type->labels->name); ?>]" value="<?php echo esc_attr( $settings['post_name'][$post_type->labels->name] ?? '' ); ?>"/>
                                     <span class="dashicons dashicons-menu"></span>
                                     <?php echo esc_html($post_type->labels->name); ?>
                                     <small style="opacity: 0.7;">(<?php echo intval($indexed_count) . ' indexed of ' . intval($all_count); ?>)</small>
@@ -191,18 +545,20 @@ if (isset($_GET['settings-updated']) &&
                     <p><label><input type="checkbox" name="llms_generator_settings[detailed_content]" value="1" <?php checked(!empty($settings['detailed_content'])); ?>> <?php esc_html_e('Include detailed content', 'website-llms-txt'); ?></label></p>
                     <p><label><input type="checkbox" name="llms_generator_settings[include_taxonomies]" value="1" <?php checked(!empty($settings['include_taxonomies'])); ?>> <?php esc_html_e('Include taxonomies (categories, tags, etc.)', 'website-llms-txt'); ?></label></p>
                     <p><label><input type="checkbox" name="llms_generator_settings[gform_include]" value="1" <?php checked(!empty($settings['gform_include'])); ?>> <?php esc_html_e('Include Gravity Forms form fields in llms.txt', 'website-llms-txt'); ?></label></p>
-                    <?php if(!empty($settings)): ?>
-                        <?php foreach($settings as $key => $value): ?>
-                            <?php if(in_array($key, ['post_types', 'max_posts', 'max_words', 'include_meta', 'include_excerpts', 'detailed_content', 'include_taxonomies', 'gform_include'])) continue ?>
-                            <?php if(is_array($value)): ?>
-                                <?php foreach($value as $second_key => $second_value): ?>
-                                    <input type="hidden" name="llms_generator_settings[<?php echo esc_attr( $key ); ?>][]" value="<?php echo esc_attr( $second_value ); ?>"/>
-                                <?php endforeach ?>
-                            <?php else: ?>
-                                <input type="hidden" name="llms_generator_settings[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $value ); ?>"/>
-                            <?php endif ?>
-                        <?php endforeach ?>
-                    <?php endif ?>
+                    <?php
+                    // post_name is edited by the text inputs above, so it is skipped here.
+                    // Carrying the whole of it as well would submit the same setting twice and
+                    // merge the hidden copy into the edited one. What is carried instead is the
+                    // part of it the inputs above did not cover.
+                    llms_render_settings_carry($settings, array(
+                        'post_types', 'post_name', 'max_posts', 'max_words', 'include_meta',
+                        'include_excerpts', 'detailed_content', 'include_taxonomies', 'gform_include',
+                    ));
+                    if (!empty($settings['post_name']) && is_array($settings['post_name'])) {
+                        $llms_unnamed = array_diff_key($settings['post_name'], array_flip($llms_named_labels));
+                        llms_render_settings_carry($llms_unnamed, array(), 'llms_generator_settings[post_name]');
+                    }
+                    ?>
                     <?php submit_button(esc_html__('Save settings', 'website-llms-txt')); ?>
                 </form>
             </div>
@@ -232,18 +588,12 @@ if (isset($_GET['settings-updated']) &&
                         <textarea name="llms_generator_settings[llms_end_file_description]" style="width: 100%;height: 80px;"><?php echo esc_textarea( isset($settings['llms_end_file_description']) ? $settings['llms_end_file_description'] : '' ); ?></textarea>
                         <i><?php esc_html_e('Final text appended at the bottom of the LLMs.txt file (e.g. footer, contact, or disclaimer information).', 'website-llms-txt'); ?></i>
                     </p>
-                    <?php if(!empty($settings)): ?>
-                        <?php foreach($settings as $key => $value): ?>
-                            <?php if(in_array($key, ['llms_txt_title', 'llms_txt_description', 'llms_after_txt_description', 'llms_end_file_description'])) continue ?>
-                            <?php if(is_array($value)): ?>
-                                <?php foreach($value as $second_key => $second_value): ?>
-                                    <input type="hidden" name="llms_generator_settings[<?php echo esc_attr( $key ); ?>][]" value="<?php echo esc_attr( $second_value ); ?>"/>
-                                <?php endforeach ?>
-                            <?php else: ?>
-                                <input type="hidden" name="llms_generator_settings[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $value ); ?>"/>
-                            <?php endif ?>
-                        <?php endforeach ?>
-                    <?php endif ?>
+                    <?php
+                    llms_render_settings_carry($settings, array(
+                        'llms_txt_title', 'llms_txt_description',
+                        'llms_after_txt_description', 'llms_end_file_description',
+                    ));
+                    ?>
                     <?php submit_button(esc_html__('Save settings', 'website-llms-txt')); ?>
                 </form>
             </div>
@@ -278,18 +628,11 @@ if (isset($_GET['settings-updated']) &&
                             </select>
                         </label>
                     </p>
-                    <?php if(!empty($settings)): ?>
-                        <?php foreach($settings as $key => $value): ?>
-                            <?php if(in_array($key, ['include_md_file', 'noindex_header', 'llms_allow_indexing', 'update_frequency'])) continue ?>
-                            <?php if(is_array($value)): ?>
-                                <?php foreach($value as $second_key => $second_value): ?>
-                                    <input type="hidden" name="llms_generator_settings[<?php echo esc_attr( $key ); ?>][]" value="<?php echo esc_attr( $second_value ); ?>"/>
-                                <?php endforeach ?>
-                            <?php else: ?>
-                                <input type="hidden" name="llms_generator_settings[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $value ); ?>"/>
-                            <?php endif ?>
-                        <?php endforeach ?>
-                    <?php endif ?>
+                    <?php
+                    llms_render_settings_carry($settings, array(
+                        'include_md_file', 'noindex_header', 'llms_allow_indexing', 'update_frequency',
+                    ));
+                    ?>
                     <?php submit_button(esc_html__('Save settings', 'website-llms-txt')); ?>
                 </form>
             </div>
