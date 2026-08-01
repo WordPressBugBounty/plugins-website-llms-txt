@@ -1209,7 +1209,53 @@ class LLMS_Generator
         // progress bar that never moved on any host whose WP_Filesystem transport cannot
         // connect. Adversarial F2. It also means the button now works on those hosts
         // rather than merely failing politely.
-        $this->remove_generated_files(array($old_upload_path, $new_upload_path, $this->temp_llms_path));
+        $reset_paths = array($old_upload_path, $new_upload_path, $this->temp_llms_path);
+
+        /*
+         * THE ROOT FILE GOES TOO, and until 8.5.6 it did not.
+         *
+         * This list held the two uploads copies and the scratch file and stopped
+         * there, so the one document a visitor actually receives, the static
+         * /llms.txt the web server returns before WordPress is reached at all,
+         * survived the button that says "Delete and recreate". On a site updating
+         * from 8.5.3 that is precisely the file carrying content 8.5.4 exists to
+         * withhold, and an owner pressing this to get rid of it was told it had
+         * gone while it was still being served.
+         *
+         * It also guaranteed a false `stale` on the next request, because the
+         * stamp went on describing two files while one of them had been removed,
+         * so an unrelated cleanup pass deleted the root copy some seconds later
+         * and ran a full crawl to replace it. That is one wasted regeneration per
+         * press, and it is how the omission stayed invisible: the outcome looked
+         * right if you waited.
+         *
+         * Single site only, which is the same rule promote_generated_file() uses
+         * and for the same reason: every blog on a network shares one ABSPATH, so
+         * blog 2 removing /llms.txt would be removing a file blog 2 never wrote.
+         */
+        if (!is_multisite()) {
+            if (defined('FLYWHEEL_PLUGIN_DIR')) {
+                $reset_paths[] = trailingslashit(dirname(ABSPATH)) . 'www/llms.txt';
+            } else {
+                $reset_paths[] = trailingslashit(ABSPATH) . 'llms.txt';
+            }
+        }
+
+        $this->remove_generated_files($reset_paths);
+
+        /*
+         * Record what was just done, which this never did at all.
+         *
+         * note_document_absent() stamps the now empty disk, so the next ordinary
+         * request agrees with it instead of reading the removal as a foreign
+         * document, and it marks a rebuild as owed, so a browser closed half way
+         * through the queue below leaves the site with a route back to a document
+         * rather than with nothing and no obligation. The queue's own completion
+         * calls update_llms_file(), which promotes and discharges it.
+         */
+        if (class_exists('LLMS_DB')) {
+            LLMS_DB::note_document_absent();
+        }
 
         $wpdb->query( "TRUNCATE TABLE {$table_cache}" );
 
@@ -1968,15 +2014,33 @@ class LLMS_Generator
          * with the disk.
          */
         if ($complete) {
+            /*
+             * THE STAMP FIRST, AND NOTHING AT ALL BETWEEN IT AND THE PROMOTE.
+             *
+             * Between the moment promote_generated_file() settles the files and
+             * the moment the stamp records them, the disk says one thing and the
+             * database says another, and any concurrent request that reads both
+             * inside that gap concludes the document is foreign and deletes it.
+             * lifecycle_state() defends against this from the reader's side, but
+             * the gap is this method's to make small, and until 8.5.6 it had an
+             * update_option() sitting in it: a serialise, a query, and every
+             * update_option filter on the site, for a value nothing was waiting
+             * for. Moved below the stamp, where the same write costs the same and
+             * is inside no window at all.
+             *
+             * The lease is still held here and is not released until further
+             * down, so a reader that does land in what is left of the gap is told
+             * in_flight by generation_in_flight() and defers.
+             */
+            if (class_exists('LLMS_DB')) {
+                LLMS_DB::note_document_promoted();
+            }
+
             // Only a complete, promoted document advances this. The settings screen
             // reads it as "Last generated", and LLMS_Core reads it to tell a run that
             // did work from one that returned without doing any, so a run that produced
             // nothing must not claim to have generated anything.
             update_option('llms_last_generated', time(), false);
-
-            if (class_exists('LLMS_DB')) {
-                LLMS_DB::note_document_promoted();
-            }
         } elseif (!$this->lock_lost && class_exists('LLMS_DB')) {
             // The destinations were removed just above, so the stamp this writes is the
             // truth about the disk, and the site is owed the document this run took

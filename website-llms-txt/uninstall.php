@@ -15,6 +15,12 @@ delete_option('llms_artifact_stamp');
 // Records when the cleanup last found a served path it could not remove, and
 // rate limits the retry. A reinstall must not inherit a block written before it.
 delete_option('llms_artifact_undeletable_at');
+// The delete-and-rebuild cycle count. It is deliberately clearable by nothing
+// inside the plugin, not even a successful rebuild, so this file is the only
+// place it is removed by hand. A reinstall arriving with the limit already
+// reached would stand down instead of running its first cleanup, which is the
+// one cycle that carries the 8.5.4 security fix.
+delete_option('llms_artifact_cycles');
 // The two lease locks. Neither should outlive the request that took it, and
 // both do when that request is killed rather than unwound: an OOM or a
 // max_execution_time kill during a generation leaves llms_generation_lock

@@ -225,6 +225,14 @@ $llms_db_trouble = ($llms_table_missing || $llms_db_behind || $llms_schema_incom
 $llms_artifact_block = (class_exists('LLMS_DB') && method_exists('LLMS_DB', 'artifact_block'))
     ? LLMS_DB::artifact_block()
     : null;
+
+// The plugin has stood down from deleting and rebuilding, because it kept having
+// to. Its own option too, and for the same reason as the one above: a record that
+// only a rolling window may clear must not sit in a slot that five other places
+// clear whenever the schema looks well.
+$llms_artifact_cycling = (class_exists('LLMS_DB') && method_exists('LLMS_DB', 'artifact_cycling'))
+    ? LLMS_DB::artifact_cycling()
+    : null;
 ?>
 
 <div class="wrap">
@@ -304,6 +312,33 @@ $llms_artifact_block = (class_exists('LLMS_DB') && method_exists('LLMS_DB', 'art
                     <?php endif; ?>
                 </ul>
                 <p><?php esc_html_e('Make the file writable by WordPress, or delete it yourself. The plugin keeps retrying and clears this notice on its own once the file is gone.', 'website-llms-txt'); ?></p>
+            </div>
+            <?php endif; ?>
+
+            <?php if (is_array($llms_artifact_cycling)): ?>
+            <div class="card">
+                <h2><?php esc_html_e('Rebuilding has been paused', 'website-llms-txt'); ?></h2>
+                <p><?php esc_html_e('The plugin keeps finding an llms.txt it did not write. Each time, it removes the file and rebuilds it, and each rebuild reads every post on the site. That has now happened often enough that the plugin has stopped, so your site is not rebuilding the file over and over.', 'website-llms-txt'); ?></p>
+                <ul>
+                    <?php foreach ($llms_artifact_cycling['paths'] as $llms_cycled_path): ?>
+                        <li><code><?php echo esc_html($llms_cycled_path); ?></code></li>
+                    <?php endforeach; ?>
+                    <li>
+                        <?php
+                        /* translators: 1: number of rebuilds, 2: date and time of the first one */
+                        printf(esc_html__('%1$s rebuilds since %2$s.', 'website-llms-txt'), esc_html(number_format_i18n($llms_artifact_cycling['count'])), esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $llms_artifact_cycling['since'])));
+                        ?>
+                    </li>
+                    <?php if (!empty($llms_artifact_cycling['until'])): ?>
+                        <li>
+                            <?php
+                            /* translators: %s: date and time the plugin will try again */
+                            printf(esc_html__('Trying again after %s.', 'website-llms-txt'), esc_html(wp_date(get_option('date_format') . ' ' . get_option('time_format'), (int) $llms_artifact_cycling['until'])));
+                            ?>
+                        </li>
+                    <?php endif; ?>
+                </ul>
+                <p><?php esc_html_e('The usual cause is a second plugin on this site that also writes an llms.txt file. Turn that feature off in the other plugin, then use Generate now below. If nothing else writes the file, send this card to support.', 'website-llms-txt'); ?></p>
             </div>
             <?php endif; ?>
 

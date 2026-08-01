@@ -147,6 +147,43 @@ class LLMS_DB
     const CONDITION_REFRESH_AFTER = 60;
 
     /**
+     * Delete-and-rebuild cycles allowed inside ARTIFACT_CYCLE_WINDOW.
+     *
+     * THREE, and the number is chosen against the one case that has to keep
+     * working. The 8.5.4 migration is ONE cycle: the pre-fix document is found,
+     * removed and rebuilt, and the site is current from then on. A rollback to
+     * 8.5.3 and forward again is one more. A file restored from a backup is one
+     * more. Nothing legitimate produces a fourth inside an hour, so three leaves
+     * every case the cleanup exists for untouched while capping the cost of a
+     * cause we cannot see at three full crawls an hour instead of one hundred and
+     * twenty.
+     *
+     * It cannot be lower. Two would put the migration one cycle from the ceiling
+     * on a site that also had a backup restored, and a site that stands down
+     * during the migration is a site still serving the document 8.5.4 exists to
+     * withdraw. The first cycle is never throttled, whatever this is set to; see
+     * artifact_cycle_limit_reached().
+     */
+    const ARTIFACT_CYCLE_LIMIT = 3;
+
+    /**
+     * The window the cycle count is measured over, and ages out of.
+     *
+     * ONE HOUR, and it is a rolling window rather than a fixed one: the
+     * timestamps are kept and the old ones drop off, so a site does not get a
+     * fresh allowance on the hour.
+     *
+     * Long enough that a runaway is stopped rather than slowed. The loop this
+     * bounds runs at one cycle every 30 to 60 seconds, so a window shorter than
+     * about ten minutes would still let a site pay a crawl every few minutes
+     * indefinitely, which on a large site is the same outage arriving slower.
+     * Short enough that a site whose real trouble has been fixed by hand is
+     * generating again within the hour without anybody having to know this
+     * mechanism exists.
+     */
+    const ARTIFACT_CYCLE_WINDOW = 3600;
+
+    /**
      * Whether this request has already counted an automatic rebuild attempt.
      *
      * Request scoped on purpose. It exists so the admin one-shot, which counts
@@ -1164,8 +1201,19 @@ class LLMS_DB
          * generation in flight, or a lease we could not take, still returns
          * false so the ladder tries again on the next request, which is the
          * behaviour those two have always had.
+         *
+         * The cycle limit is forgiven for the same reasons, all three of them,
+         * and it has to be. It is the second way maybe_clean_artifacts() can
+         * refuse without anything having failed, and a stand-down reported as a
+         * ladder failure would pin llms_db_version below the target, record a
+         * step_failed condition that says nothing true about the schema, and,
+         * because this step is STEP_EXCLUSIVE, take a lease on every request for
+         * ever. That last one is the exact unbounded per-request cost the limiter
+         * was added to stop, so leaving this line unchanged would have had the
+         * fix reintroduce the fault it fixes, one door along. Found by reading
+         * this method after adding the gate, not by measuring it.
          */
-        return static::artifact_blocked_recently();
+        return (static::artifact_blocked_recently() || static::artifact_cycle_limit_reached());
     }
 
     /**
@@ -1264,23 +1312,92 @@ class LLMS_DB
      * Public because both the generator's failure path and the one-shot have to
      * be able to say a rebuild is owed.
      *
-     * @param int $delay Seconds until the WP-Cron retry. The default is the one
-     *                   the plugin uses everywhere; the failure path passes
-     *                   REBUILD_RETRY_AFTER once the free attempts are spent.
+     * ASKING FOR A REBUILD IS AN ATTEMPT, AND IT NOW COUNTS AS ONE. Up to 8.5.5
+     * this method read the attempt record and wrote back exactly what it had just
+     * read:
+     *
+     *     $attempts = static::rebuild_attempts();
+     *     update_option($name, $attempts . ':' . static::rebuild_last_attempt(), true);
+     *
+     * On a site that owed nothing yet, both of those read nothing and the record
+     * was written as "0:0". rebuild_attempts() then returned 0 for ever, because
+     * nothing incremented it and because its own ageing-out is guarded on
+     * $parts[1] > 0, which "0:0" fails. rebuild_retry_delay() therefore returned
+     * its 30 second default on every call and claim_rebuild_attempt() never
+     * refused anything. The 8.5.5 notes say repeated failures back off. They did
+     * not: the only writers that incremented were claim_rebuild_attempt(), whose
+     * one caller is the admin one-shot, and note_document_absent(), and the cron
+     * route reaches neither on the paths that return without generating.
+     * Confirmed on a production install: llms_rebuild_pending held "0:0" while
+     * the site rebuilt every 30 seconds.
+     *
+     * The delay is now derived rather than passed, for the same reason. A caller
+     * that has to name the back-off itself is a caller that can forget to, and
+     * clean_artifacts() did forget: it called this with no argument, took the 30
+     * second default and never consulted rebuild_retry_delay() at all.
+     *
+     * @param int|null $delay Seconds until the WP-Cron retry. Null, which is what
+     *                        every caller in the plugin passes, means "whatever
+     *                        the attempt record says it should be now".
      * @return void
      */
-    public static function request_rebuild($delay = 30)
+    public static function request_rebuild($delay = null)
     {
-        $attempts = static::rebuild_attempts();
+        // Before the delay is read, so that the delay reflects the attempt being
+        // made rather than the one before it.
+        static::note_rebuild_attempt();
 
-        update_option(
-            static::rebuild_option_name(),
-            $attempts . ':' . static::rebuild_last_attempt(),
-            true
-        );
+        if (null === $delay) {
+            $delay = static::rebuild_retry_delay();
+        }
 
-        wp_clear_scheduled_hook('llms_update_llms_file_cron');
-        wp_schedule_single_event(time() + max(1, (int) $delay), 'llms_update_llms_file_cron');
+        static::schedule_rebuild($delay);
+    }
+
+    /**
+     * Book the scheduled route, without moving one that would already arrive in
+     * time.
+     *
+     * wp_clear_scheduled_hook() followed by wp_schedule_single_event() was
+     * unconditional here, which is a rebuild that can be starved indefinitely on
+     * a site with ordinary traffic. Every request that finds the state stale
+     * pushed the event out by another delay, so on a site taking a request more
+     * often than the delay, the event's due time moved away faster than the clock
+     * moved towards it and WP-Cron never ran it. The site then owed a document it
+     * had no route to, on the one mechanism, WP-Cron, that a site with no
+     * administrator logging in depends on entirely.
+     *
+     * An existing booking is left alone unless this call wants the rebuild
+     * SOONER. That keeps the due time monotonically decreasing while an
+     * obligation stands, so it always arrives, and it costs nothing: the cron
+     * array is autoloaded, so the lookup is an array read, and the writes it
+     * avoids are two option writes per request on exactly the sites that could
+     * least afford them.
+     *
+     * A booking already in the past is left alone by the same test, which is the
+     * important half: that is an event WP-Cron is late running, and re-booking it
+     * is precisely how it got starved.
+     *
+     * ensure_rebuild_scheduled() makes the same decision from the other side, for
+     * a route that has been lost rather than one being asked for.
+     *
+     * @param int $delay Seconds from now.
+     * @return void
+     */
+    protected static function schedule_rebuild($delay)
+    {
+        $when   = time() + max(1, (int) $delay);
+        $booked = wp_next_scheduled('llms_update_llms_file_cron');
+
+        if (false !== $booked && (int) $booked <= $when) {
+            return;
+        }
+
+        if (false !== $booked) {
+            wp_clear_scheduled_hook('llms_update_llms_file_cron');
+        }
+
+        wp_schedule_single_event($when, 'llms_update_llms_file_cron');
     }
 
     /**
@@ -1288,6 +1405,16 @@ class LLMS_DB
      *
      * Reads the autoload set rather than the option, for the reason in
      * request_rebuild(). Same technique as clear_condition_if_present().
+     *
+     * This was briefly changed to get_option() during 8.5.6, on the theory that
+     * the alloptions array not carrying the option was the cause of the runaway
+     * regeneration. It was not, it cost one query per request on every healthy
+     * install, and the change was withdrawn. A snapshot read is safe HERE
+     * because being wrong about it is not destructive: too low an answer means a
+     * rebuild is not re-armed as promptly as it could be, and the document on
+     * disk is untouched either way. The read that IS destructive when it is
+     * wrong is the artifact stamp, and that one is confirmed against the
+     * database before anything acts on it. See lifecycle_state().
      *
      * @return bool
      */
@@ -1593,18 +1720,13 @@ class LLMS_DB
     {
         static::stamp_artifacts();
 
-        // Record the attempt HERE, where the outcome is known, not only in the
-        // admin one-shot's claim. Until 8.5.5 the counter was advanced by
-        // claim_rebuild_attempt() alone, which the WP-Cron route never calls, so
-        // rebuild_attempts() stayed 0 on that route and rebuild_retry_delay()
-        // below always returned its 30 second default. A site whose generation
-        // kept failing therefore ran a full crawl of every post every 30
-        // seconds, indefinitely, and the docblock on REBUILD_FREE_ATTEMPTS said
-        // the opposite. Both routes now share one counter, advanced once per
-        // run by whichever of them made the run.
-        static::note_rebuild_attempt();
-
-        static::request_rebuild(static::rebuild_retry_delay());
+        // The attempt is counted, and the delay derived from the count, inside
+        // request_rebuild(). 8.5.5 did both of those here instead, which left
+        // every OTHER caller of request_rebuild() outside the back-off: it took
+        // the 30 second default and wrote the attempt record back unchanged. Both
+        // now live in the one method that every route goes through, so there is
+        // no longer a caller that can be written without them.
+        static::request_rebuild();
     }
 
     /**
@@ -1613,10 +1735,17 @@ class LLMS_DB
      * The admin one-shot advances it in claim_rebuild_attempt(), before the run,
      * because a run that dies in a way no handler sees (a SIGKILL, an OOM) must
      * still count against the budget or that route could retry for ever. This
-     * method is for the routes that have no claim step. The request-scoped guard
-     * keeps the admin route at one attempt per run rather than two, which is
-     * what REBUILD_FREE_ATTEMPTS is documented to mean and what the acceptance
-     * bar was measured against.
+     * method is for the routes that have no claim step, and since 8.5.6 it is
+     * called by request_rebuild(), which is every one of them. The request-scoped
+     * guard keeps the admin route at one attempt per run rather than two, which
+     * is what REBUILD_FREE_ATTEMPTS is documented to mean and what the acceptance
+     * bar was measured against, and it is also what keeps clean_artifacts() at
+     * one attempt when both of its request_rebuild() calls fire in one pass.
+     *
+     * The guard cannot leave the obligation unrecorded. It is only ever set by
+     * this method or by claim_rebuild_attempt(), and both of those write the flag
+     * before setting it, so a request that reaches here with the guard already
+     * true is a request in which the flag has already been written.
      *
      * @return void
      */
@@ -1684,11 +1813,32 @@ class LLMS_DB
     /**
      * The stamp as stored, or null when there is none.
      *
-     * Out of the autoload set rather than with get_option(), for the same reason
-     * rebuild_pending() reads it that way: this is consulted on every request and
-     * an install with no stamp must not pay a query for it. The value is a plain
-     * string precisely so that it can be compared straight out of that array with
-     * no unserialize.
+     * Out of the autoload set rather than with get_option(), because this is
+     * consulted on every request and an install with no stamp must not pay a
+     * query for it. The value is a plain string precisely so that it can be
+     * compared straight out of that array with no unserialize.
+     *
+     * THIS IS A SNAPSHOT, NOT A LIVE READ, AND THAT IS THE WHOLE OF THE 8.5.5
+     * BUG. WordPress fills the alloptions array once, early in the bootstrap,
+     * and every later call in the request answers out of that photograph. The
+     * fingerprint it gets compared against in lifecycle_state() is deliberately
+     * live: llms_generated_artifact_fingerprint() clears the stat cache per path
+     * and asks the filesystem now. So a request whose bootstrap happened before
+     * another process finished a generation compares an OLD stamp against a NEW
+     * file, concludes the file is foreign, and deletes it.
+     *
+     * Measured, on 8.5.5, with no second plugin and no object cache: stored
+     * eab30af7..., computed 5ba1937c..., and 5ba1937c... was already in the
+     * database, written by the generation that had just finished. The two values
+     * that "disagreed" were the same value. Front-end traffic only, one trigger,
+     * six minutes: 12 full regenerations and 116 deletions of the plugin's own
+     * document. Each rebuild writes a fresh stamp, which re-arms the same race,
+     * so it never exits.
+     *
+     * The read is left exactly as it was, because it is correct for what it is
+     * and it is free. What changed is that nothing DESTRUCTIVE is allowed to act
+     * on it any more. lifecycle_state() confirms against the database before it
+     * will answer `stale`. See fresh_artifact_stamp().
      *
      * @return string|null
      */
@@ -1702,6 +1852,107 @@ class LLMS_DB
         }
 
         return (string) $autoloaded[$name];
+    }
+
+    /**
+     * The stamp as it is in the database right now, bypassing every cache.
+     *
+     * The confirming read, and it exists because none of the ordinary ways of
+     * asking are actually live:
+     *
+     *   - wp_load_alloptions() is the request's bootstrap snapshot.
+     *   - get_option() consults that same snapshot FIRST, so it returns the same
+     *     stale value whenever the option is autoloaded, which this one is. It
+     *     would close the case where the option is MISSING from the array, which
+     *     is real and was measured, but not the case where the array simply has
+     *     not caught up, which is the one driving the loop.
+     *   - wp_load_alloptions(true) does not help either. Its $force_cache
+     *     argument is passed to wp_cache_get(), and WordPress's default,
+     *     non-persistent object cache documents that argument as unused. On the
+     *     majority of installs, which have no persistent object cache, it
+     *     returns the same array.
+     *
+     * So it is $wpdb, directly. One primary key lookup on wp_options, and the
+     * table has a UNIQUE index on option_name.
+     *
+     * WHERE THE COST LANDS IS THE ENTIRE POINT. This is not called on the healthy
+     * path. A site whose document is its own answers `current` from the snapshot
+     * and two stats, exactly as before, and never reaches here. It is called only
+     * where the plugin is about to delete every generated file and crawl every
+     * post on the site, and against that a single indexed lookup does not
+     * register.
+     *
+     * THREE ANSWERS, NOT TWO, AND THE THIRD ONE MATTERS. "I asked and there is no
+     * stamp" and "I could not ask" are different facts, and collapsing them into
+     * null made a failed confirming read produce the destructive verdict: null
+     * cannot describe the disk, so lifecycle_state() answered `stale`, and a
+     * database that would not answer one SELECT deleted every generated file and
+     * booked a full crawl of the site. That is precisely backwards. This release
+     * exists to stop the plugin destroying anything on evidence it does not have,
+     * and an unavailable database is the strongest possible case of not having
+     * it. The two are kept apart so the caller can defer on one and act on the
+     * other, because "no row" is a real state that a legitimately stale install
+     * has to be able to reach: an install that has never stamped anything.
+     *
+     * @return string|null|false The stamp; null when the row genuinely does not
+     *                           exist; false when the question could not be
+     *                           asked at all.
+     */
+    protected static function fresh_artifact_stamp()
+    {
+        global $wpdb;
+
+        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_var')) {
+            return false;
+        }
+
+        // Suppressed and then inspected, the same way purge_unreadable_cache_rows()
+        // does it a few hundred lines up. The failure is handled here, by
+        // deferring, so it does not also need to be printed into somebody's page.
+        $suppressed = $wpdb->suppress_errors(true);
+        $value      = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
+                static::artifact_option_name()
+            )
+        );
+        $error = $wpdb->last_error;
+        $wpdb->suppress_errors($suppressed);
+
+        if ('' !== $error) {
+            // get_var() returns null for a query that failed and for a query that
+            // matched nothing, so the error is the only thing that tells them
+            // apart.
+            return false;
+        }
+
+        return (null === $value) ? null : (string) $value;
+    }
+
+    /**
+     * Does this stamp describe this disk.
+     *
+     * Extracted so lifecycle_state() and its confirming pass cannot drift apart.
+     * They were written as two copies of the comparison first, and two copies of
+     * a three-clause test is how one of them ends up missing the version floor.
+     *
+     * @param string|null $stored      A stamp, "<plugin version> <fingerprint>".
+     * @param string      $fingerprint What is on disk now.
+     * @return bool
+     */
+    protected static function stamp_describes($stored, $fingerprint)
+    {
+        if (null === $stored) {
+            return false;
+        }
+
+        $parts   = explode(' ', $stored, 2);
+        $version = $parts[0];
+        $digest  = isset($parts[1]) ? $parts[1] : null;
+
+        return (null !== $digest
+            && $digest === $fingerprint
+            && version_compare($version, self::ARTIFACT_REBUILD_SINCE, '>='));
     }
 
     /**
@@ -1733,8 +1984,11 @@ class LLMS_DB
      *
      * COST. The order is the order of expense. A healthy install answers current
      * or none from the autoload set and two stats, with no query at all; the
-     * lease, which is the one query here, is only read when the disk already
-     * disagrees with the stamp, which on a healthy install never happens.
+     * lease, which is one of the two queries here, is only read when the disk
+     * already disagrees with the stamp, which on a healthy install never
+     * happens. The other, the confirming read of the stamp, is behind that
+     * again and is only paid where the alternative is deleting the site's
+     * document and crawling every post to rebuild it.
      *
      * @return string One of the LIFECYCLE_* constants.
      */
@@ -1749,31 +2003,195 @@ class LLMS_DB
 
         $stored      = static::stored_artifact_stamp();
         $fingerprint = llms_generated_artifact_fingerprint();
-        $matches     = false;
 
-        if (null !== $stored) {
-            $parts   = explode(' ', $stored, 2);
-            $version = $parts[0];
-            $digest  = isset($parts[1]) ? $parts[1] : null;
-
-            $matches = (null !== $digest
-                && $digest === $fingerprint
-                && version_compare($version, self::ARTIFACT_REBUILD_SINCE, '>='));
-        }
-
-        if ($matches) {
-            if (static::rebuild_pending()) {
-                return self::LIFECYCLE_OWED;
-            }
-
-            return ('' === $fingerprint) ? self::LIFECYCLE_NONE : self::LIFECYCLE_CURRENT;
+        if (static::stamp_describes($stored, $fingerprint)) {
+            return static::settled_state($fingerprint);
         }
 
         if (static::generation_in_flight()) {
             return self::LIFECYCLE_IN_FLIGHT;
         }
 
+        /*
+         * ABOUT TO ANSWER `stale`, WHICH IS THE ONLY STATE THAT DELETES ANYTHING.
+         *
+         * Everything above this line was decided from the request's bootstrap
+         * snapshot of the options table, and that snapshot can be older than the
+         * files it is being compared against. On 8.5.5 that was enough, on its
+         * own, to make a busy site delete and rebuild its own document every
+         * thirty to ninety seconds for ever. See stored_artifact_stamp() for the
+         * measurement.
+         *
+         * So the verdict is not acted on until it has been confirmed against the
+         * database. Three reads, in this order, and the order is the argument:
+         *
+         *   1. the fingerprint, live      (already taken, above)
+         *   2. the stamp, live from wp_options
+         *   3. the fingerprint, live, again
+         *
+         * If (1) and (3) disagree, the files changed while we were asking, which
+         * means a generation settled underneath this request. Nothing here is
+         * entitled to judge that: answer in_flight and let the next request,
+         * which will see a settled disk, decide. That is the same deferral the
+         * lease check above makes, reached by evidence rather than by a lock,
+         * and it covers the gap between a run settling its files and that run
+         * writing its stamp.
+         *
+         * If they agree, the disk was stable across the whole confirmation, the
+         * stamp was read inside that stable window, and a mismatch is now a
+         * statement about the world rather than about this request's timing.
+         *
+         * COST. None of this is on the healthy path. A site whose document is its
+         * own returns at settled_state() above, from the snapshot and two stats,
+         * with no query at all. This runs only where the alternative is deleting
+         * every generated file and crawling every post on the site.
+         *
+         * It also closes, as a side effect rather than as its purpose, the case
+         * where the option is missing from the alloptions array altogether: a
+         * persistent object cache serving a stale blob, an autoload flag that has
+         * drifted. Measured at four deletions before it self-healed on 8.5.5.
+         * Here it produces none.
+         */
+        $fresh = static::fresh_artifact_stamp();
+
+        if (false === $fresh) {
+            /*
+             * The confirming read could not be made. A confirmation that could
+             * not be obtained is not a confirmation, and the one thing this must
+             * never do is treat "I could not check" as "I checked, and it is not
+             * mine". Deferring here is the same answer, for the same reason, as
+             * the one at the top of this method when the fingerprint function is
+             * not loaded: not ours to act on.
+             *
+             * Nothing is recorded, nothing is stamped and nothing is deleted, so
+             * a database that recovers between one request and the next simply
+             * gets the decision made then.
+             */
+            return self::LIFECYCLE_IN_FLIGHT;
+        }
+
+        if ($fresh === $stored) {
+            // The snapshot was already the truth. Nothing to re-evaluate, and no
+            // second fingerprint to compute. Null on both sides lands here too,
+            // which is the install that has never stamped anything arriving at
+            // the migration, and it must still be able to reach stale.
+            return self::LIFECYCLE_STALE;
+        }
+
+        $confirm = llms_generated_artifact_fingerprint();
+
+        if ($confirm !== $fingerprint) {
+            return self::LIFECYCLE_IN_FLIGHT;
+        }
+
+        if (static::stamp_describes($fresh, $confirm)) {
+            // Confirmed, so the rebuild flag is read the same way. See
+            // settled_state().
+            return static::settled_state($confirm, true);
+        }
+
         return self::LIFECYCLE_STALE;
+    }
+
+    /**
+     * The answer when the stamp and the disk agree: which of the three settled
+     * states this site is in.
+     *
+     * One place, because lifecycle_state() reaches this conclusion twice now,
+     * once from the snapshot and once from the confirmation, and two copies of
+     * it is how the owed case ends up handled on one path and not the other.
+     *
+     * $confirmed IS NOT A REFINEMENT, IT CLOSES A SECOND LOOP. Reaching here from
+     * the confirming path means this request's options snapshot has been PROVEN
+     * out of date, and note_document_promoted() writes the stamp and deletes the
+     * rebuild flag in the same breath. So a snapshot too old to have the new
+     * stamp is also too old to have lost the flag, and reading the flag out of it
+     * answers "a rebuild is owed" about a rebuild that has already happened.
+     *
+     * That is not harmless. `owed` sends maybe_clean_artifacts() into
+     * ensure_rebuild_scheduled(), which books another generation, which promotes,
+     * which writes another stamp, which is another chance for the next request to
+     * hold a snapshot older than it. It is the same self-sustaining loop as the
+     * one this release is about, one state along and without the deletions:
+     * llms.txt would stop disappearing and go on being rebuilt about once a
+     * minute, which is the other half of what the report describes. Found by
+     * reading this path after writing it, not by measuring it.
+     *
+     * The extra read costs a second primary key lookup, on a path that is already
+     * rare and that only exists to avoid a full crawl of the site.
+     *
+     * @param string $fingerprint What is on disk.
+     * @param bool   $confirmed   True when the snapshot is known to be stale.
+     * @return string
+     */
+    protected static function settled_state($fingerprint, $confirmed = false)
+    {
+        if ($confirmed) {
+            $pending = static::fresh_rebuild_pending();
+
+            if (null === $pending) {
+                // Could not ask. Same rule as the stamp read above: defer rather
+                // than answer from evidence we do not have. Deferring is cheap
+                // here, because the document has already been confirmed to be
+                // ours and is on disk; the only thing not decided is whether a
+                // further rebuild is owed, and the next request decides it.
+                return self::LIFECYCLE_IN_FLIGHT;
+            }
+        } else {
+            $pending = static::rebuild_pending();
+        }
+
+        if ($pending) {
+            return self::LIFECYCLE_OWED;
+        }
+
+        return ('' === $fingerprint) ? self::LIFECYCLE_NONE : self::LIFECYCLE_CURRENT;
+    }
+
+    /**
+     * Whether a rebuild is owed according to the database rather than according
+     * to this request's bootstrap snapshot.
+     *
+     * Only for settled_state()'s confirmed path. Everywhere else the snapshot is
+     * the right read: it is free, and being wrong about it there costs a delayed
+     * re-arm rather than a generation.
+     *
+     * IT DOES NOT FALL BACK TO THE SNAPSHOT. It did, and that was wrong twice
+     * over. The snapshot is the thing this method exists to distrust, and its
+     * characteristic error on this path is the expensive direction: a snapshot
+     * older than the promote still carries llms_rebuild_pending, so falling back
+     * to it answers "owed" about a rebuild that has already happened and books a
+     * full crawl of the site. Falling back to a known-stale read, on the one path
+     * that exists because the read is stale, to answer a question the database
+     * just declined, is not a fallback. Returning null and letting the caller
+     * defer costs one request's delay and cannot book anything.
+     *
+     * @return bool|null True or false when the database answered; null when it
+     *                   could not be asked.
+     */
+    protected static function fresh_rebuild_pending()
+    {
+        global $wpdb;
+
+        if (!isset($wpdb) || !is_object($wpdb) || !method_exists($wpdb, 'get_var')) {
+            return null;
+        }
+
+        $suppressed = $wpdb->suppress_errors(true);
+        $value      = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1",
+                static::rebuild_option_name()
+            )
+        );
+        $error = $wpdb->last_error;
+        $wpdb->suppress_errors($suppressed);
+
+        if ('' !== $error) {
+            return null;
+        }
+
+        return (null !== $value);
     }
 
     /**
@@ -1866,6 +2284,34 @@ class LLMS_DB
          * path removable.
          */
         if (static::artifact_blocked_recently()) {
+            return false;
+        }
+
+        /*
+         * The hard stop on the cycle itself, and it is deliberately the last
+         * thing asked before the lease is taken and the first thing that does not
+         * care WHY the state is stale.
+         *
+         * Everything above this line reasons about a known cause. This does not.
+         * It counts how many times the plugin has deleted the document and asked
+         * for it back, and refuses once that has happened too often to be any of
+         * the causes the cleanup exists for. A site can reach a permanently stale
+         * state through a second plugin writing /llms.txt, through an alloptions
+         * array that never carries our stamp, through a stale value in one, or
+         * through something nobody has thought of yet, and all four look
+         * identical from here: delete, rebuild, delete, rebuild. The three brakes
+         * this release inherited all fail open on the one path where the rebuild
+         * SUCCEEDS, because success is what clears them. This one is not cleared
+         * by success. See artifact_cycle_limit_reached().
+         *
+         * Nothing is stamped on the way out, which is the whole difference
+         * between standing down and adopting. Stamping here would make
+         * lifecycle_state() answer `current` against a document we did not write,
+         * which is exactly the 8.5.4 defect that 8.5.5 exists to fix, arriving
+         * through a new door. The state stays stale, the plugin stops acting on
+         * it, and the settings screen says so.
+         */
+        if (static::artifact_cycle_limit_reached()) {
             return false;
         }
 
@@ -2020,8 +2466,48 @@ class LLMS_DB
         // the evidence this is about.
         $claimed = static::stamp_claims_a_document();
 
+        // Likewise. Whatever is answering /llms.txt at this moment is what the
+        // notice has to be able to name, and in a moment it will not be there.
+        $present = static::present_served_paths();
+
         $survivors = array();
         $deleted   = (int) llms_delete_generated_files($survivors);
+
+        /*
+         * Count the cycle, once, here.
+         *
+         * HERE, and not on the success path, because the success path is where
+         * every other brake in this class is released. note_document_promoted()
+         * deletes llms_rebuild_pending and with it the attempt count that
+         * rebuild_attempts() reads; it calls forget_artifact_block_if_clear(),
+         * and clean_artifacts() itself calls clear_artifact_blocked() a few lines
+         * below. A rebuild that WORKS therefore resets all three, which is
+         * correct for all three: they measure failure, and there was none. The
+         * runaway is made of successes. Nothing that a successful rebuild does
+         * may touch this count, and nothing does: it is written here and it is
+         * removed by the window and by uninstall, and by nothing else at all.
+         *
+         * ONCE, because the survivor branch below asks for a rebuild a second
+         * time in the same pass, and two option writes for one delete would halve
+         * the allowance for no reason.
+         *
+         * Both branches count. A pass that deleted a served document and asked
+         * for it back is a cycle whether or not one of the paths survived, and
+         * the survivor case does the same work: the deletable copies are gone,
+         * the crawl is asked for, and the site pays for it. Its own 300 second
+         * rate limit already bounds it at twelve an hour, so this only ever
+         * lowers that, on a site that is by definition already broken and already
+         * being told so by name on the settings screen.
+         *
+         * A pass that deleted nothing, was owed nothing and found no survivor is
+         * not a cycle. That is a site which has never generated arriving at the
+         * migration, and it must not spend an allowance for doing nothing.
+         */
+        $cycled = ($deleted > 0 || $claimed || !empty($survivors));
+
+        if ($cycled) {
+            static::note_artifact_cycle($present);
+        }
 
         if ($deleted > 0 || $claimed) {
             static::request_rebuild();
@@ -2083,6 +2569,203 @@ class LLMS_DB
         static::stamp_artifacts();
 
         return true;
+    }
+
+    /**
+     * The served paths that exist right now.
+     *
+     * Read immediately before the delete, so the notice can name what was
+     * actually answering /llms.txt rather than describe it in the abstract. The
+     * stats are free at that point: llms_generated_artifact_fingerprint() has
+     * already cleared and refilled the stat cache entry for each of these paths
+     * in this request, in lifecycle_state(), a few microseconds earlier.
+     *
+     * @return string[]
+     */
+    protected static function present_served_paths()
+    {
+        $present = array();
+
+        if (!function_exists('llms_served_file_paths')) {
+            return $present;
+        }
+
+        foreach (llms_served_file_paths() as $path) {
+            if (file_exists($path)) {
+                $present[] = (string) $path;
+            }
+        }
+
+        return $present;
+    }
+
+    /**
+     * Option holding the recent delete-and-rebuild cycles.
+     *
+     * ITS OWN OPTION, and that is the point of it rather than an implementation
+     * detail. This has to survive everything the success path clears, and the
+     * success path clears a great deal: note_document_promoted() deletes
+     * llms_rebuild_pending, clean_artifacts() calls clear_artifact_blocked(), and
+     * llms_db_condition is wiped by five separate callers whenever the schema
+     * looks healthy. 8.5.5 already learned this the expensive way with the
+     * undeletable-artifact record: it was put in the shared condition slot and
+     * then exempted at the clearing sites one at a time, and it was still being
+     * deleted in the same request, in the end by the settings screen itself. The
+     * lesson recorded there is the rule followed here. An option nothing else
+     * knows about cannot be cleared by anything else, and no exemption has to be
+     * remembered by whoever writes the next clearing site.
+     *
+     * autoload = no. A healthy install never reads it, because lifecycle_state()
+     * answers current, none or owed and maybe_clean_artifacts() returns before
+     * this is reached. Autoloading it would put it in the alloptions array of
+     * every request of every install that has ever run one cycle, for ever, which
+     * is a permanent cost for a transient record.
+     *
+     * @return string
+     */
+    protected static function artifact_cycle_option_name()
+    {
+        return 'llms_artifact_cycles';
+    }
+
+    /**
+     * The stored cycle record, normalised, with anything outside the window
+     * already dropped.
+     *
+     * The window is applied on read rather than on write, which is what makes it
+     * a rolling window and not a bucket that refills on the hour: a timestamp
+     * ages out ARTIFACT_CYCLE_WINDOW seconds after the cycle it records, one at a
+     * time, wherever the hour boundary happens to be.
+     *
+     * A timestamp in the future is dropped rather than trusted. A clock set
+     * forward and later corrected would otherwise hold the limiter closed until
+     * the clock caught up, and this mechanism refusing to work is a site with no
+     * llms.txt.
+     *
+     * @return array ['at' => int[], 'paths' => string[]]
+     */
+    protected static function artifact_cycle_record()
+    {
+        $stored = get_option(static::artifact_cycle_option_name());
+        $now    = time();
+        $at     = array();
+        $paths  = array();
+
+        if (is_array($stored)) {
+            if (isset($stored['at']) && is_array($stored['at'])) {
+                foreach ($stored['at'] as $stamp) {
+                    $stamp = (int) $stamp;
+
+                    if ($stamp > 0 && $stamp <= $now && ($now - $stamp) < static::ARTIFACT_CYCLE_WINDOW) {
+                        $at[] = $stamp;
+                    }
+                }
+            }
+
+            if (isset($stored['paths']) && is_array($stored['paths'])) {
+                $paths = array_values(array_map('strval', $stored['paths']));
+            }
+        }
+
+        sort($at, SORT_NUMERIC);
+
+        return array('at' => $at, 'paths' => $paths);
+    }
+
+    /**
+     * Record that a delete-and-request-rebuild cycle has just been performed.
+     *
+     * Only the timestamps still inside the window are written back, so the option
+     * cannot grow: it holds at most ARTIFACT_CYCLE_LIMIT entries plus the one
+     * being added, and the read above drops the rest. There is no separate
+     * cleanup to forget to run and no way for this to become large.
+     *
+     * @param string[] $paths The served paths that were on disk for this cycle.
+     * @return void
+     */
+    protected static function note_artifact_cycle($paths)
+    {
+        $record = static::artifact_cycle_record();
+        $at     = $record['at'];
+
+        $at[] = time();
+
+        // Keep the most recent, in the impossible case that a clock jump or a
+        // hand-edited option leaves more than the limit inside the window. The
+        // count is what the limit is read from, so an unbounded list here would
+        // be an unbounded option.
+        if (count($at) > (static::ARTIFACT_CYCLE_LIMIT + 1)) {
+            $at = array_slice($at, -(static::ARTIFACT_CYCLE_LIMIT + 1));
+        }
+
+        update_option(
+            static::artifact_cycle_option_name(),
+            array(
+                'at'    => array_values($at),
+                'paths' => array_values(array_map('strval', (array) $paths)),
+            ),
+            false
+        );
+    }
+
+    /**
+     * Has this site cycled too often to keep cycling.
+     *
+     * THE FIRST CYCLE IS NEVER REFUSED, and that is load bearing rather than
+     * incidental. The migration this whole mechanism was built for is one cycle:
+     * an 8.5.3-era document, which may carry content the site does not publish,
+     * is found, deleted and rebuilt. A limiter that could stand down before that
+     * happened would leave the file in place, which is the outcome 8.5.4 and
+     * 8.5.5 were both released to prevent. So the count has to reach the limit
+     * before anything is refused, and the limit is three.
+     *
+     * A file that keeps coming back is, by definition, not that migration. The
+     * migration happens once per install per rollback; a fourth cycle inside an
+     * hour is a cause the plugin cannot fix by deleting the file again, and
+     * deleting it again costs a full crawl of every post on the site.
+     *
+     * Reached only while lifecycle_state() is stale, so a healthy install never
+     * reads the option and never pays the query.
+     *
+     * @return bool
+     */
+    protected static function artifact_cycle_limit_reached()
+    {
+        $record = static::artifact_cycle_record();
+
+        return (count($record['at']) >= static::ARTIFACT_CYCLE_LIMIT);
+    }
+
+    /**
+     * The cycling record for anything that needs to show it, or null when the
+     * site is not standing down.
+     *
+     * Reports only while the limit is actually reached. A site that cycled once
+     * yesterday is a site that did what this mechanism is for, and a notice about
+     * it would be noise on a screen whose notices have to mean something.
+     *
+     * @return array|null ['since' => int, 'last' => int, 'count' => int,
+     *                    'until' => int, 'paths' => string[]], or null.
+     */
+    public static function artifact_cycling()
+    {
+        $record = static::artifact_cycle_record();
+
+        if (count($record['at']) < static::ARTIFACT_CYCLE_LIMIT) {
+            return null;
+        }
+
+        $first = $record['at'][0];
+        $last  = $record['at'][count($record['at']) - 1];
+
+        return array(
+            'since' => $first,
+            'last'  => $last,
+            'count' => count($record['at']),
+            // When the oldest entry ages out and one cycle is allowed again.
+            'until' => $first + static::ARTIFACT_CYCLE_WINDOW,
+            'paths' => $record['paths'],
+        );
     }
 
     /**

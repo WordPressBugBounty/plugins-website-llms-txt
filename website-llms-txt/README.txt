@@ -4,7 +4,7 @@ Tags: llm, ai, seo, rankmath, yoast
 Requires at least: 5.8
 Tested up to: 6.9.4
 Requires PHP: 7.2
-Stable tag: 8.5.5
+Stable tag: 8.5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -97,6 +97,20 @@ No. The two plugins cannot be active on the same site. Both define a PHP class n
 
 
 == Changelog ==
+
+= 8.5.6 =
+
+🛠 Fixes
+
+• On sites serving more than one visitor at a time, the plugin could delete its own llms.txt and rebuild it every 30 to 90 seconds, leaving the file missing most of the time. It now confirms a file is not its own before removing it.
+• The back off added in 8.5.5 never engaged, so affected sites kept retrying every 30 seconds.
+• When the plugin repeatedly finds an llms.txt it did not write, it now stops rebuilding and names the file on the settings screen.
+
+🔒 Security
+
+• "Delete and recreate" left the llms.txt in your site root in place, so a site updating from 8.5.3 could still serve the old file. It is now removed too.
+
+Updating is recommended for all sites, and is important if you are on 8.5.4 or 8.5.5.
 
 = 8.5.5 =
 
@@ -441,49 +455,6 @@ Result:
 • Added support for deleting the uploaded .md file directly from the meta box.
 • Fixed the behavior of the “Do not include this page in llms.txt” checkbox. Now, when activated, the page is correctly excluded from the generated llms.txt file.
 
-= 8.0.4 =
-
-🐞 Bug Fixes & i18n Improvements
-
-• Fixed internationalization (i18n) issue in the meta box: wrapped the meta box title in __() for proper translation support (thanks to Alex Lion for the report).
-• Fixed PHP warnings about undefined array keys (llms_txt_title, llms_txt_description, llms_after_txt_description, llms_end_file_description, include_md_file, detailed_content) by adding proper defaults and safe checks when saving settings.
-• Minor code cleanup to improve stability and compatibility.
-
-= 8.0.3 =
-
-🐞 Minor Fix: Meta Box Title
-
-• Renamed the page/post meta box title from “Markdown (.md) file” to “Llms.txt” for better clarity and consistency with the feature’s purpose.
-
-= 8.0.2 =
-
-✨ UI & Page-Level Control: Sidebar Meta Box & Exclusion Option
-
-• Moved the Markdown (.md) file meta box to the sidebar of the page/post edit screen for a cleaner and more consistent experience.
-• Added a “Do not include this page in llms.txt” checkbox at the page level to allow excluding individual pages/posts from llms.txt output.
-• Updated the meta box to include: llms.txt heading, .md upload field, and the new exclusion checkbox, all neatly organized.
-• Ensured the exclusion setting and uploaded .md file are saved correctly and reflected in llms.txt.
-• Minor UI polishing and accessibility improvements to align with WordPress admin styles.
-
-= 8.0.1 =
-
-✨ Enhancements & Options: More Flexible LLMS.txt Content Control
-
-• Changed default behavior: options Include meta information (publish date, author, etc.), Include post excerpts, and Include taxonomies (categories, tags, etc.) are now unchecked by default for cleaner output.
-• Added a new option: Include detailed content, allowing fine-grained control over whether to include detailed page/post content in the llms.txt file.
-• Improved settings clarity and fallback behavior when all optional content is disabled.
-
-= 8.0.0 =
-
-✨ New Features & Improvements: Admin UI, Content Options, Markdown
-
-• Rearranged admin dashboard: moved warning section and update frequency settings into an “Advanced Settings” card for better clarity.
-• Improved content settings: added checkboxes to control inclusion of post excerpts and meta descriptions in output, with cleaner fallback to just URL + Title when unchecked.
-• Added a dedicated “Custom LLMS.txt Content” panel in settings for defining a custom Title, Description, After Description, and End File Description.
-• Added custom description field and an additional manual entry field per page/post, both included in llms.txt.
-• Added support for attaching `.md` (Markdown) files per page/post. Link to the file appears in llms.txt if enabled.
-• `.md` files are stored in a dedicated `/llms_md/` folder and linked in llms.txt for reference.
-
 = Older versions =
 
-Changelog entries for versions 7.1.6 and earlier have been condensed to keep this file within wp.org's length limit. The full version history is preserved in the plugin source. Contact the plugin authors if you need details on an older release.
+Changelog entries for versions 8.0.4 and earlier have been condensed to keep this file within wp.org's length limit. The full version history is preserved in the plugin source. Contact the plugin authors if you need details on an older release.
